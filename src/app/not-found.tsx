@@ -53,7 +53,7 @@ export default function NotFound() {
         </div>
 
         <motion.h1 className="mb-4 select-none font-display text-3xl font-bold text-[#111] md:mb-6 md:text-5xl" variants={item}>
-          This page wandered off campus.
+          This page wandered off.
         </motion.h1>
         <motion.p className="mb-8 select-none text-lg text-[var(--text-secondary)] md:mb-12 md:text-xl" variants={item}>
           The page you&apos;re looking for isn&apos;t here. Let&apos;s get you back.

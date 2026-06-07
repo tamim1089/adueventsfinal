@@ -38,7 +38,7 @@ export default function GlassNav() {
         <Link href="/" className="flex items-center gap-2.5">
           <Logo size={22} chip priority />
           <span className={`text-sm font-semibold tracking-tight ${textCls}`}>
-            Al Ain Campus Events
+            ADU Events
           </span>
         </Link>
 

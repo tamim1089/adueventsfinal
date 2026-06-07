@@ -1,23 +1,24 @@
 import type { Metadata } from "next";
 import Logo from "@/components/Logo";
 import LoginForm from "./LoginForm";
-import InteractiveNeuralVortex from "@/components/ui/interactive-neural-vortex-background";
+import { CosmicParallaxBg } from "@/components/ui/parallax-cosmic-background";
 
 export const metadata: Metadata = { title: "Sign in" };
 
 export default function AdminLoginPage() {
   return (
     <div className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-black px-6 py-12">
-      {/* recolored (ADU red) interactive neural vortex */}
-      <InteractiveNeuralVortex />
-      <div className="absolute inset-0 -z-10 bg-black/30" />
+      {/* cosmic parallax background (ADU black + red) */}
+      <div className="absolute inset-0 -z-10">
+        <CosmicParallaxBg head="" text="" loop />
+      </div>
 
       <div className="w-full max-w-md rounded-[24px] border border-black/5 bg-white p-8 shadow-2xl">
         <div className="flex items-center gap-3">
           <Logo size={30} priority />
           <div className="h-6 w-px bg-[var(--glass-border)]" />
           <span className="text-sm font-semibold text-[var(--text-primary)]">
-            Al Ain Campus Events
+            ADU Events
           </span>
         </div>
 

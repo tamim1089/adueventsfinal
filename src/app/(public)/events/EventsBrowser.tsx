@@ -10,7 +10,7 @@ import { GlassFilter } from "@/components/ui/liquid-radio";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Reveal from "@/components/landing/Reveal";
 
-const C = "/media/campus";
+const C = "/media/photos";
 
 type EventItem = {
   title: string;
@@ -30,7 +30,7 @@ const EVENTS: Record<"upcoming" | "past", EventItem[]> = {
     { title: "Industry Career Fair", organizer: "Admission & Registration", venue: "Main Hall", when: "Thu · 10:00 AM", attending: 540, overview: "Meet employers across engineering, business, health, and law.", image: `${C}/StudentsWorkingtogetheronamachinecoe-landing3.jpg` },
   ],
   past: [
-    { title: "Welcome Week 2026", organizer: "Student Affairs Department", venue: "Campus Green", when: "Last week", attending: 1200, overview: "Orientation, clubs fair, and campus tours for new students.", image: `${C}/StudentsWorkingtogetheronamachinecoe-landing3.jpg` },
+    { title: "Welcome Week 2026", organizer: "Student Affairs Department", venue: "Main Green", when: "Last week", attending: 1200, overview: "Orientation, clubs fair, and guided tours for new students.", image: `${C}/StudentsWorkingtogetheronamachinecoe-landing3.jpg` },
     { title: "Health Sciences Symposium", organizer: "College of Health Sciences", venue: "Auditorium B", when: "2 weeks ago", attending: 320, overview: "Guest lectures and poster sessions on public health research.", image: `${C}/TwoFemaleStudentsonatable_500x350-14.jpeg` },
   ],
 };
@@ -50,7 +50,7 @@ export default function EventsBrowser() {
             Events
           </p>
           <h1 className="mt-3 font-display text-4xl font-bold text-[var(--text-primary)] sm:text-5xl">
-            What&apos;s on at Al Ain Campus
+            What&apos;s on at ADU
           </h1>
         </div>
 

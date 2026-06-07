@@ -19,11 +19,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Al Ain Campus Events — Abu Dhabi University",
-    template: "%s · Al Ain Campus Events",
+    default: "ADU Events — Abu Dhabi University",
+    template: "%s · ADU Events",
   },
   description:
-    "Discover, organize, and document events across Al Ain Campus — colleges, departments, and centers, all in one place.",
+    "Discover, organize, and document events across ADU — colleges, departments, and centers, all in one place.",
 };
 
 export const viewport: Viewport = {

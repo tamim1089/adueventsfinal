@@ -1,4 +1,4 @@
-// The fixed list of Al Ain Campus organizers. Seed for the DB; also used
+// The fixed list of ADU organizers. Seed for the DB; also used
 // directly by the public landing page (no fetch needed for static chrome).
 export type Organizer = {
   slug: string;

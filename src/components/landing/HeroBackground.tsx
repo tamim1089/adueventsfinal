@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShaderAnimation } from "@/components/ui/shader-animation";
 
 // The hero is a deliberate DARK band on the light page (the shader needs black).
 // WebGL shader by default; under Reduce Motion (or no WebGL) → a static dark
 // gradient so we never animate against a user's stated preference.
+// A cursor-follow spotlight highlights the waves around the pointer.
 export default function HeroBackground() {
   const [animate, setAnimate] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const spotRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -22,8 +25,30 @@ export default function HeroBackground() {
     setAnimate(!reduce && hasWebGL);
   }, []);
 
+  // Pointer-follow highlight. HeroBackground sits behind content, so we listen
+  // on the window and project the pointer into this element's box.
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const root = rootRef.current;
+      const spot = spotRef.current;
+      if (!root || !spot) return;
+      const r = root.getBoundingClientRect();
+      const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (!inside) {
+        spot.style.opacity = "0";
+        return;
+      }
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      spot.style.opacity = "1";
+      spot.style.background = `radial-gradient(260px circle at ${x}px ${y}px, rgba(255,255,255,0.14), rgba(255,45,63,0.12) 35%, transparent 70%)`;
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, []);
+
   return (
-    <div className="absolute inset-0 -z-10 overflow-hidden bg-black">
+    <div ref={rootRef} className="absolute inset-0 -z-10 overflow-hidden bg-black">
       {animate ? (
         <div className="absolute inset-0 [&>div]:!h-full">
           <ShaderAnimation />
@@ -39,6 +64,13 @@ export default function HeroBackground() {
       )}
       {/* legibility scrim — text contrast never depends on the shader frame */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-[#0a0c16]" />
+      {/* cursor-follow highlight (additive, brightens the waves near the pointer) */}
+      <div
+        ref={spotRef}
+        className="absolute inset-0 opacity-0 transition-opacity duration-300"
+        style={{ mixBlendMode: "screen" }}
+        aria-hidden="true"
+      />
       {/* fade into the light page below */}
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-[var(--bg-base)]" />
     </div>

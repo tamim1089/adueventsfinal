@@ -25,7 +25,7 @@ const FEATURES = [
   { icon: ImageUp, title: "Posters, dates & venues", body: "Every event carries its poster, schedule, and location — clear at a glance." },
   { icon: BadgeCheck, title: "Attendance & certificates", body: "Upload attendance, then auto-generate and share certificates in a click." },
   { icon: MessageSquareText, title: "Post-event surveys", body: "Collect participant feedback with a survey attached to the event." },
-  { icon: Images, title: "Photo galleries", body: "Document the day. Highlight campus life with post-event photos." },
+  { icon: Images, title: "Photo galleries", body: "Document the day. Highlight student life with post-event photos." },
   { icon: FileBarChart, title: "Reports & annual reviews", body: "Download per-event reports and publish each department's annual report." },
 ];
 
@@ -51,13 +51,13 @@ export default function LandingPage() {
           <Reveal>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium tracking-wide text-white/80 backdrop-blur-md">
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-              Abu Dhabi University · Al Ain Campus
+              Abu Dhabi University
             </span>
           </Reveal>
 
           <h1 className="mt-6 max-w-3xl font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
             <span className="block text-white">
-              <WordsPullUp text="Every campus event," />
+              <WordsPullUp text="Every ADU event," />
             </span>
             <span className="block" style={{ color: "var(--accent)" }}>
               <WordsPullUp text="in one place." />
@@ -66,7 +66,7 @@ export default function LandingPage() {
 
           <Reveal delay={160}>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/75">
-              What&apos;s on across Al Ain Campus — every college, department, and center.
+              What&apos;s on across ADU — every college, department, and center.
             </p>
           </Reveal>
 
@@ -108,10 +108,10 @@ export default function LandingPage() {
           titleComponent={
             <div className="mb-4">
               <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
-                For everyone on campus
+                For everyone at ADU
               </p>
               <h2 className="mt-3 font-display text-4xl font-bold text-[var(--text-primary)] sm:text-6xl">
-                Everything on campus,
+                Everything at ADU,
                 <br />
                 <span className="text-4xl md:text-[5rem] font-bold leading-none">in one place.</span>
               </h2>
@@ -120,7 +120,7 @@ export default function LandingPage() {
         >
           <Image
             src="/media/showcase-public.png"
-            alt="The public Al Ain Campus Events page anyone can browse"
+            alt="The public ADU Events page anyone can browse"
             height={900}
             width={1440}
             className="mx-auto h-full rounded-2xl object-cover object-left-top"
@@ -140,7 +140,7 @@ export default function LandingPage() {
             Live events, the moment they go live.
           </h2>
           <p className="mt-4 max-w-xl text-[var(--text-secondary)]">
-            Overlapping sessions are surfaced side by side, so nothing on campus gets missed.
+            Overlapping sessions are surfaced side by side, so nothing gets missed.
           </p>
         </Reveal>
 
@@ -262,9 +262,9 @@ export default function LandingPage() {
             Life at ADU
           </p>
           <h2 className="mt-3 mb-8 max-w-2xl font-display text-4xl font-bold leading-tight text-[var(--text-primary)] sm:text-5xl">
-            A look around Al Ain Campus.
+            A look around ADU.
           </h2>
-          <YouTubeEmbed id="AY_uWLK1LOU" title="Abu Dhabi University — Al Ain Campus" />
+          <YouTubeEmbed id="AY_uWLK1LOU" title="Abu Dhabi University" />
         </Reveal>
       </section>
 
@@ -277,7 +277,7 @@ export default function LandingPage() {
           >
             <h2 className="font-display text-3xl font-bold text-white sm:text-4xl">Run your next event here.</h2>
             <p className="mx-auto mt-4 max-w-md text-white/85">
-              Organizers across Al Ain Campus publish, track, and document events in one workspace.
+              Organizers across ADU publish, track, and document events in one workspace.
             </p>
             <Link
               href="/admin"
@@ -292,7 +292,7 @@ export default function LandingPage() {
       {/* ============ FOOTER ============ */}
       <footer className="border-t border-[var(--glass-border)] px-6 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-[var(--text-tertiary)] sm:flex-row">
-          <p>© {new Date().getFullYear()} Abu Dhabi University — Al Ain Campus</p>
+          <p>© {new Date().getFullYear()} Abu Dhabi University</p>
           <p>Part of the ADU Apps platform</p>
         </div>
       </footer>
