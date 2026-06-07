@@ -1,15 +1,25 @@
 import Link from "next/link";
-import VideoBackground from "@/components/landing/VideoBackground";
+import Image from "next/image";
+import {
+  CalendarRange,
+  ImageUp,
+  BadgeCheck,
+  MessageSquareText,
+  Images,
+  FileBarChart,
+} from "lucide-react";
+import HeroBackground from "@/components/landing/HeroBackground";
 import Reveal from "@/components/landing/Reveal";
+import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { ORGANIZERS } from "@/lib/organizers";
 
 const FEATURES = [
-  { title: "Browse by organizer", body: "Jump straight to any college, department, or center. Eleven organizers, one map." },
-  { title: "Posters, dates & venues", body: "Every event carries its poster, schedule, and location — clear at a glance." },
-  { title: "Attendance & certificates", body: "Upload attendance, then auto-generate and share certificates in a click." },
-  { title: "Post-event surveys", body: "Collect participant feedback with a survey attached to the event." },
-  { title: "Photo galleries", body: "Document the day. Highlight campus life with post-event photos." },
-  { title: "Reports & annual reviews", body: "Download per-event reports and publish each department's annual report." },
+  { icon: CalendarRange, title: "Browse by organizer", body: "Jump straight to any college, department, or center. Eleven organizers, one map." },
+  { icon: ImageUp, title: "Posters, dates & venues", body: "Every event carries its poster, schedule, and location — clear at a glance." },
+  { icon: BadgeCheck, title: "Attendance & certificates", body: "Upload attendance, then auto-generate and share certificates in a click." },
+  { icon: MessageSquareText, title: "Post-event surveys", body: "Collect participant feedback with a survey attached to the event." },
+  { icon: Images, title: "Photo galleries", body: "Document the day. Highlight campus life with post-event photos." },
+  { icon: FileBarChart, title: "Reports & annual reviews", body: "Download per-event reports and publish each department's annual report." },
 ];
 
 const STATS = [
@@ -21,32 +31,28 @@ const STATS = [
 export default function LandingPage() {
   return (
     <>
-      {/* ============ HERO ============ */}
+      {/* ============ HERO (dark shader band) ============ */}
       <section className="relative flex min-h-[100svh] items-center overflow-hidden">
-        <VideoBackground />
-        {/* ambient drifting light (atmosphere) */}
-        <div className="blob blob-a -left-32 top-10 h-96 w-96" style={{ background: "var(--accent)" }} />
-        <div className="blob blob-b right-0 bottom-0 h-[28rem] w-[28rem]" style={{ background: "var(--brand-navy)" }} />
-
-        <div className="mx-auto w-full max-w-6xl px-6 pt-32 pb-20">
+        <HeroBackground />
+        <div className="mx-auto w-full max-w-6xl px-6 pt-32 pb-24">
           <Reveal>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-[var(--text-secondary)] backdrop-blur-md">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium tracking-wide text-white/80 backdrop-blur-md">
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
               Abu Dhabi University · Al Ain Campus
             </span>
           </Reveal>
 
           <Reveal delay={80}>
-            <h1 className="mt-6 max-w-3xl font-display text-5xl font-bold leading-[1.05] tracking-tight text-[var(--text-primary)] sm:text-6xl lg:text-7xl">
+            <h1 className="mt-6 max-w-3xl font-display text-5xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
               Every campus event.
-              <span className="block" style={{ color: "var(--accent-strong)" }}>
+              <span className="block" style={{ color: "var(--accent)" }}>
                 One beautiful place.
               </span>
             </h1>
           </Reveal>
 
           <Reveal delay={160}>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--text-secondary)]">
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/75">
               Discover what&apos;s happening across the colleges, departments, and centers of
               Al Ain Campus — with posters, attendance, certificates, and reports built in.
             </p>
@@ -56,14 +62,14 @@ export default function LandingPage() {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a
                 href="#events"
-                className="inline-flex h-13 items-center justify-center rounded-full px-7 py-3.5 text-base font-semibold text-[var(--accent-on)] shadow-xl transition-transform active:scale-[0.97]"
+                className="inline-flex items-center justify-center rounded-full px-7 py-3.5 text-base font-semibold text-[var(--accent-on)] shadow-xl transition-transform active:scale-[0.97]"
                 style={{ background: "var(--accent)" }}
               >
                 Explore events
               </a>
               <Link
                 href="/admin"
-                className="glass inline-flex h-13 items-center justify-center rounded-full px-7 py-3.5 text-base font-semibold text-[var(--text-primary)] transition-transform active:scale-[0.97]"
+                className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/5 px-7 py-3.5 text-base font-semibold text-white backdrop-blur-md transition-transform active:scale-[0.97] hover:bg-white/10"
               >
                 Organizer sign in
               </Link>
@@ -75,10 +81,8 @@ export default function LandingPage() {
               {STATS.map((s) => (
                 <div key={s.label}>
                   <dt className="sr-only">{s.label}</dt>
-                  <dd className="font-display text-4xl font-bold text-[var(--text-primary)]">
-                    {s.value}
-                  </dd>
-                  <p className="mt-1 text-sm text-[var(--text-tertiary)]">{s.label}</p>
+                  <dd className="font-display text-4xl font-bold text-white">{s.value}</dd>
+                  <p className="mt-1 text-sm text-white/55">{s.label}</p>
                 </div>
               ))}
             </dl>
@@ -86,13 +90,41 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ============ SHOWCASE (scroll-animation reveal) ============ */}
+      <section id="showcase" className="relative -mt-20">
+        <ContainerScroll
+          titleComponent={
+            <div className="mb-4">
+              <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
+                One workspace
+              </p>
+              <h2 className="mt-3 font-display text-4xl font-bold text-[var(--text-primary)] sm:text-6xl">
+                Manage it all from
+                <br />
+                <span className="text-4xl md:text-[5rem] font-bold leading-none">one dashboard.</span>
+              </h2>
+            </div>
+          }
+        >
+          <Image
+            src="/media/showcase.png"
+            alt="Al Ain Campus Events admin dashboard"
+            height={900}
+            width={1440}
+            className="mx-auto h-full rounded-2xl object-cover object-left-top"
+            draggable={false}
+            priority
+          />
+        </ContainerScroll>
+      </section>
+
       {/* ============ EVENTS TEASER ============ */}
       <section id="events" className="relative mx-auto max-w-6xl px-6 py-24">
         <Reveal>
-          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent-strong)" }}>
+          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
             Happening now
           </p>
-          <h2 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-tight text-[var(--text-primary)] sm:text-5xl">
+          <h2 className="mt-3 max-w-2xl font-display text-4xl font-bold leading-tight text-[var(--text-primary)] sm:text-5xl">
             Live events, the moment they go live.
           </h2>
           <p className="mt-4 max-w-xl text-[var(--text-secondary)]">
@@ -107,16 +139,14 @@ export default function LandingPage() {
             { tag: "Library", title: "Research Skills Workshop", when: "Tomorrow · 11:00 AM", where: "Learning Commons" },
           ].map((e, i) => (
             <Reveal key={e.title} delay={i * 90}>
-              <article className="faux-glass h-full p-6">
+              <article className="faux-glass h-full p-6 transition-transform hover:-translate-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
                   <span className="truncate text-xs font-medium text-[var(--text-tertiary)]">{e.tag}</span>
                 </div>
-                <h3 className="mt-3 font-display text-2xl font-semibold text-[var(--text-primary)]">
-                  {e.title}
-                </h3>
+                <h3 className="mt-3 font-display text-2xl font-semibold text-[var(--text-primary)]">{e.title}</h3>
                 <div className="mt-5 space-y-1.5 text-sm">
-                  <p className="font-medium text-[var(--text-primary)]">{e.when}</p>
+                  <p className="font-semibold text-[var(--text-primary)]">{e.when}</p>
                   <p className="text-[var(--text-secondary)]">{e.where}</p>
                 </div>
               </article>
@@ -126,14 +156,13 @@ export default function LandingPage() {
       </section>
 
       {/* ============ ORGANIZERS ============ */}
-      <section id="organizers" className="relative overflow-hidden py-24">
-        <div className="blob blob-a left-1/4 top-0 h-80 w-80" style={{ background: "var(--brand-navy)" }} />
+      <section id="organizers" className="relative overflow-hidden bg-[var(--bg-subtle)] py-24">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal>
-            <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent-strong)" }}>
+            <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
               Organizers
             </p>
-            <h2 className="mt-3 font-display text-4xl font-semibold text-[var(--text-primary)] sm:text-5xl">
+            <h2 className="mt-3 font-display text-4xl font-bold text-[var(--text-primary)] sm:text-5xl">
               Eleven ways in.
             </h2>
           </Reveal>
@@ -141,15 +170,13 @@ export default function LandingPage() {
             {ORGANIZERS.map((o, i) => (
               <Reveal key={o.slug} delay={(i % 4) * 60}>
                 <a
-                  href={`#events`}
+                  href="#events"
                   className="faux-glass flex h-full min-h-24 flex-col justify-between p-4 transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
                 >
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                     {o.kind}
                   </span>
-                  <span className="mt-2 text-sm font-medium leading-snug text-[var(--text-primary)]">
-                    {o.name}
-                  </span>
+                  <span className="mt-2 text-sm font-medium leading-snug text-[var(--text-primary)]">{o.name}</span>
                 </a>
               </Reveal>
             ))}
@@ -160,44 +187,48 @@ export default function LandingPage() {
       {/* ============ FEATURES ============ */}
       <section id="features" className="mx-auto max-w-6xl px-6 py-24">
         <Reveal>
-          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent-strong)" }}>
+          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
             Built for organizers
           </p>
-          <h2 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-tight text-[var(--text-primary)] sm:text-5xl">
+          <h2 className="mt-3 max-w-2xl font-display text-4xl font-bold leading-tight text-[var(--text-primary)] sm:text-5xl">
             From the poster to the report — handled.
           </h2>
         </Reveal>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f, i) => (
-            <Reveal key={f.title} delay={(i % 3) * 80}>
-              <div className="faux-glass h-full p-6">
-                <h3 className="font-display text-xl font-semibold text-[var(--text-primary)]">
-                  {f.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">
-                  {f.body}
-                </p>
-              </div>
-            </Reveal>
-          ))}
+          {FEATURES.map((f, i) => {
+            const Icon = f.icon;
+            return (
+              <Reveal key={f.title} delay={(i % 3) * 80}>
+                <div className="faux-glass h-full p-6">
+                  <span
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-[14px]"
+                    style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
+                  >
+                    <Icon size={22} strokeWidth={2} aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-4 font-display text-xl font-semibold text-[var(--text-primary)]">{f.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{f.body}</p>
+                </div>
+              </Reveal>
+            );
+          })}
         </div>
       </section>
 
       {/* ============ CTA BAND ============ */}
       <section className="relative mx-auto max-w-6xl px-6 pb-28">
         <Reveal>
-          <div className="glass relative overflow-hidden px-8 py-14 text-center sm:px-16 sm:py-20">
-            <div className="blob blob-b right-10 top-0 h-64 w-64" style={{ background: "var(--accent)" }} />
-            <h2 className="relative font-display text-3xl font-semibold text-[var(--text-primary)] sm:text-4xl">
-              Run your next event here.
-            </h2>
-            <p className="relative mx-auto mt-4 max-w-md text-[var(--text-secondary)]">
+          <div
+            className="relative overflow-hidden rounded-[28px] px-8 py-14 text-center sm:px-16 sm:py-20"
+            style={{ background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%)" }}
+          >
+            <h2 className="font-display text-3xl font-bold text-white sm:text-4xl">Run your next event here.</h2>
+            <p className="mx-auto mt-4 max-w-md text-white/85">
               Organizers across Al Ain Campus publish, track, and document events in one workspace.
             </p>
             <Link
               href="/admin"
-              className="relative mt-8 inline-flex h-13 items-center justify-center rounded-full px-8 py-3.5 text-base font-semibold text-[var(--accent-on)] shadow-xl transition-transform active:scale-[0.97]"
-              style={{ background: "var(--accent)" }}
+              className="mt-8 inline-flex items-center justify-center rounded-full bg-white px-8 py-3.5 text-base font-semibold text-[var(--accent-strong)] shadow-xl transition-transform active:scale-[0.97]"
             >
               Sign in to get started
             </Link>
@@ -206,7 +237,7 @@ export default function LandingPage() {
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer className="border-t border-white/10 px-6 py-10">
+      <footer className="border-t border-[var(--glass-border)] px-6 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-[var(--text-tertiary)] sm:flex-row">
           <p>© {new Date().getFullYear()} Abu Dhabi University — Al Ain Campus</p>
           <p>Part of the ADU Apps platform</p>

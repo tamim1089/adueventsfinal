@@ -1,41 +1,40 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Al Ain Campus Events — design tokens (single source).
-   Dark navy canvas + one vivid ADU-red accent + glass chrome.
-   Never hand-pick these values in components.
+   Al Ain Campus Events — LIGHT theme tokens (single source).
+   Light canvas + dark text + one vivid ADU-red accent.
+   Glass = light frosted surfaces. Shader bands are dark on purpose.
    ============================================================ */
 :root {
   /* canvas */
-  --bg-base: #0a0c16;
-  --bg-grad-top: #11142400;
-  --bg-grad-bottom: #06070d;
-  --bg-elevated: #11142a;
+  --bg-base: #f7f8fb;
+  --bg-elevated: #ffffff;
+  --bg-subtle: #eef1f6;
 
   /* brand (sampled from the ADU logo) */
-  --accent: #f0273a;        /* ADU red — CTAs, active states, key numbers */
-  --accent-strong: #ff3b4e;
-  --accent-deep: #b3101f;
+  --accent: #e11d2e;        /* ADU red — CTAs, active states, key numbers */
+  --accent-strong: #c8101f;
+  --accent-soft: #fdeced;
   --accent-on: #ffffff;
-  --brand-navy: #1b2a6b;    /* secondary glow only */
+  --brand-navy: #1b2a6b;
 
-  /* text — read-critical content is always 100% opacity */
-  --text-primary: #f4f7fa;
-  --text-secondary: #aab4c0;
-  --text-tertiary: #6b7682;
+  /* text — read-critical content is always full strength */
+  --text-primary: #0c1020;
+  --text-secondary: #4a5160;
+  --text-tertiary: #8a92a3;
 
   /* state */
-  --success: #2fbf71;
-  --warning: #e8a317;
-  --danger: #e5484d;
+  --success: #128a4f;
+  --warning: #b3760a;
+  --danger: #d12530;
 
-  /* glass */
-  --glass-fill: rgba(255, 255, 255, 0.06);
-  --glass-fill-strong: rgba(255, 255, 255, 0.10);
-  --glass-rim: rgba(255, 255, 255, 0.55);
-  --glass-rim-soft: rgba(255, 255, 255, 0.10);
-  --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
-  --glass-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
+  /* glass (light) */
+  --glass-fill: rgba(255, 255, 255, 0.55);
+  --glass-fill-strong: rgba(255, 255, 255, 0.75);
+  --glass-rim: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(15, 20, 40, 0.08);
+  --glass-shadow: 0 8px 28px rgba(20, 28, 55, 0.10);
+  --glass-shadow-lg: 0 24px 60px rgba(20, 28, 55, 0.16);
 
   /* geometry */
   --r-sm: 8px;
@@ -54,7 +53,7 @@
   --color-text: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);
-  --font-display: var(--font-playfair);
+  --font-display: var(--font-display);
   --font-sans: var(--font-inter);
   --radius-sm: var(--r-sm);
   --radius-md: var(--r-md);
@@ -65,6 +64,7 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  color-scheme: light;
 }
 
 body {
@@ -75,32 +75,25 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* ---- Glass surface primitive ----------------------------------
-   Backdrop blur (never content blur) + luminosity-preserving tint
-   + hairline top-left specular rim + soft drop shadow.
-   Used for chrome only (nav, sheets). Cards use .faux-glass. */
+/* ---- Glass surface primitive (light) --------------------------
+   Backdrop blur of what's behind + soft white tint + hairline rim
+   + soft shadow. Chrome only (nav, sheets). Cards use .faux-glass. */
 .glass {
   position: relative;
   background: var(--glass-fill);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
-  border: 1px solid var(--glass-rim-soft);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: var(--r-lg);
 }
-/* hairline specular rim, brightest top-left → faint bottom-right */
 .glass::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(
-    135deg,
-    var(--glass-rim) 0%,
-    rgba(255, 255, 255, 0.12) 35%,
-    transparent 70%
-  );
+  background: linear-gradient(135deg, var(--glass-rim) 0%, rgba(255, 255, 255, 0.2) 40%, transparent 75%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -108,37 +101,22 @@ body {
   pointer-events: none;
 }
 
-/* ---- Faux-glass floor: tint + rim + shadow, NO live blur. -------
-   Cheap on the GPU (safe for long lists) and doubles as the
-   Reduce-Transparency fallback. Use for cards/panels. */
+/* ---- Faux-glass card (light): solid-ish surface, no live blur. -
+   GPU-cheap for long lists; doubles as Reduce-Transparency fallback. */
 .faux-glass {
   position: relative;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-elevated);
+  border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: var(--r-lg);
 }
-.faux-glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), transparent 60%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-}
 
-/* ambient drifting light blobs (atmosphere only, 20% tier) */
+/* ambient drifting light blobs (atmosphere only) */
 .blob {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(80px);
-  opacity: 0.18;
+  filter: blur(90px);
+  opacity: 0.12;
   pointer-events: none;
   will-change: transform;
 }
@@ -153,7 +131,6 @@ body {
 .blob-a { animation: drift-a 18s var(--ease) infinite; }
 .blob-b { animation: drift-b 22s var(--ease) infinite; }
 
-/* fade/rise-in on scroll-reveal */
 @keyframes rise {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
@@ -161,36 +138,22 @@ body {
 .reveal { animation: rise 0.7s var(--ease) both; }
 
 /* ============================================================
-   A11y — honor system preferences (non-negotiable, §6)
+   A11y — honor system preferences (non-negotiable)
    ============================================================ */
-/* Reduce Transparency → solid surfaces, no blur (legibility wins) */
 @media (prefers-reduced-transparency: reduce) {
-  .glass,
-  .faux-glass {
-    background: var(--bg-elevated);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+  .glass { background: var(--bg-elevated); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
-/* Reduce Motion → everything instant, no drift/reveal */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .blob-a,
-  .blob-b,
-  .reveal {
-    animation: none !important;
-  }
-  *,
-  *::before,
-  *::after {
+  .blob-a, .blob-b, .reveal { animation: none !important; }
+  *, *::before, *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
 }
 
-/* visible focus for keyboard users on every interactive surface */
 :where(a, button, input, select, textarea):focus-visible {
-  outline: 2px solid var(--accent-strong);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--r-sm);
 }

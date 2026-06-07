@@ -254,10 +254,33 @@ nothing clipped, sidebar collapses to a scroll-nav on mobile, accent CTAs at ful
 
 ---
 
+## 15. Theme change — LIGHT mode (current)
+
+The app is **light mode by default** (was dark). Token system in `globals.css` flipped:
+light canvas `#f7f8fb`, dark text `#0c1020`, ADU red `#e11d2e` accent kept. Glass is now light-frosted;
+`.faux-glass` cards are solid white. Display font switched from Playfair (serif) to **Space Grotesk** + Inter body.
+
+The **hero is a deliberate dark band** on the light page — it hosts a live WebGL shader (see below).
+This is intentional contrast, not a theme leak; it fades into the light canvas.
+
+## 16. Integrated components (`src/components/ui/`)
+
+shadcn convention path; alias `@/*` → `src/*`, so `@/components/ui/*` resolves here.
+- `container-scroll-animation.tsx` (framer-motion) — used in the **#showcase** section to reveal the
+  admin dashboard in a scroll-driven 3D-tilt card.
+- `shader-animation.tsx` (npm `three`) — the **hero background** (CSP-safe, bundled). Wrapped by
+  `HeroBackground.tsx` which falls back to a static gradient under Reduce Motion / no-WebGL.
+- `shader-lines.tsx` (loads three.js from a **CDN**) — copied in as requested but **NOT wired into the live
+  page**: the runtime CDN `<script>` violates our `script-src 'self'` CSP. Use `shader-animation.tsx` instead.
+- lucide-react icons on the feature cards.
+
+Deps added: `framer-motion`, `three` (+`@types/three`), `lucide-react`.
+
 ## Status
 
-- ✅ Scaffold, env, tokens, glass system, fonts
-- ✅ Public landing page (video hero + all sections), responsive, screenshot-verified
+- ✅ Scaffold, env, tokens, glass system, fonts (Space Grotesk + Inter)
+- ✅ LIGHT mode theme
+- ✅ Public landing page (WebGL shader hero + scroll-reveal showcase + all sections), responsive, screenshot-verified
 - ✅ Admin shell (login + dashboard), responsive, screenshot-verified
 - ✅ Backend setup: Supabase clients, auth proxy, full schema + RLS + storage + seed migration, security headers
 - ⏳ Next: connect a real Supabase project (`.env.local`), run `0001_init.sql`, then build §9 features in §11 order

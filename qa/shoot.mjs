@@ -16,12 +16,18 @@ const PAGES = [
   { name: "admin-dashboard", path: "/admin" },
 ];
 
-const browser = await chromium.launch();
+// SwiftShader gives headless Chromium a working WebGL context for the shader.
+const browser = await chromium.launch({
+  args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"],
+});
+
+// (1) Full-page shots under Reduce Motion: all content is visible (reveals are
+// additive, not gating) AND this is the required reduced-motion a11y proof.
 for (const vp of VIEWPORTS) {
   const ctx = await browser.newContext({
     viewport: { width: vp.width, height: vp.height },
     deviceScaleFactor: vp.dpr,
-    reducedMotion: "reduce", // stable frames; also exercises the a11y fallback
+    reducedMotion: "reduce",
   });
   const page = await ctx.newPage();
   for (const p of PAGES) {
@@ -33,5 +39,21 @@ for (const vp of VIEWPORTS) {
   }
   await ctx.close();
 }
+
+// (2) Motion-ON hero shot (viewport only) to prove the live WebGL shader.
+for (const vp of VIEWPORTS) {
+  const ctx = await browser.newContext({
+    viewport: { width: vp.width, height: vp.height },
+    deviceScaleFactor: vp.dpr,
+  });
+  const page = await ctx.newPage();
+  await page.goto(BASE + "/", { waitUntil: "networkidle" });
+  await page.waitForTimeout(1200); // let the shader render several frames
+  const file = `${OUT}/hero-shader-${vp.name}.png`;
+  await page.screenshot({ path: file }); // viewport only
+  console.log("shot", file);
+  await ctx.close();
+}
+
 await browser.close();
 console.log("done");

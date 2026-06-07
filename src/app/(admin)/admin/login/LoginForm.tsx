@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const inputCls =
-  "w-full rounded-[12px] border border-white/10 bg-white/[0.04] px-4 py-3 text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none transition-colors focus:border-[var(--accent-strong)]";
+  "w-full rounded-[12px] border border-[var(--glass-border)] bg-[var(--bg-subtle)] px-4 py-3 text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none transition-colors focus:border-[var(--accent)] focus:bg-white";
 
 export default function LoginForm() {
   const router = useRouter();
