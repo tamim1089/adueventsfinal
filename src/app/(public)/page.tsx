@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   CalendarRange,
   ImageUp,
@@ -13,6 +12,7 @@ import {
   Radio,
 } from "lucide-react";
 import HeroBackground from "@/components/landing/HeroBackground";
+import ShowcaseScreen from "@/components/landing/ShowcaseScreen";
 import Reveal from "@/components/landing/Reveal";
 import YouTubeEmbed from "@/components/landing/YouTubeEmbed";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
@@ -118,15 +118,7 @@ export default function LandingPage() {
             </div>
           }
         >
-          <Image
-            src="/media/showcase-public.png"
-            alt="The public ADU Events page anyone can browse"
-            height={900}
-            width={1440}
-            className="mx-auto h-full rounded-2xl object-cover object-left-top"
-            draggable={false}
-            priority
-          />
+          <ShowcaseScreen />
         </ContainerScroll>
       </section>
 

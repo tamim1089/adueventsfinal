@@ -34,15 +34,24 @@ export function ShaderAnimation() {
       uniform vec2 resolution;
       uniform float time;
 
+      float rand(float n){ return fract(sin(n) * 43758.5453123); }
+
       void main(void) {
         vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-        float t = time*0.05;
-        float lineWidth = 0.002;
+        float t = time*0.06;
+        float lineWidth = 0.0016;
 
         vec3 color = vec3(0.0);
+        // More lines, each with its own random speed + phase so new waves keep
+        // arriving at different moments (random, staggered) — never all at once,
+        // but always something on screen.
         for(int j = 0; j < 3; j++){
-          for(int i=0; i < 5; i++){
-            color[j] += lineWidth*float(i*i) / abs(fract(t - 0.01*float(j)+float(i)*0.01)*5.0 - length(uv) + mod(uv.x+uv.y, 0.2));
+          for(int i=0; i < 8; i++){
+            float r = rand(float(i) * 2.17 + float(j) * 0.53);
+            float speed = 0.55 + 1.25 * r;                 // each line refreshes at its own pace
+            float phase = t * speed + r * 6.2831;          // random start offset
+            float spacing = 3.0 + 3.0 * rand(float(i) + 7.0);
+            color[j] += lineWidth*float(i*i) / abs(fract(phase - 0.01*float(j)) * spacing - length(uv) + mod(uv.x + uv.y, 0.2));
           }
         }
 
