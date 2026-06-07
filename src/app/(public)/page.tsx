@@ -14,8 +14,10 @@ import {
 } from "lucide-react";
 import HeroBackground from "@/components/landing/HeroBackground";
 import Reveal from "@/components/landing/Reveal";
+import YouTubeEmbed from "@/components/landing/YouTubeEmbed";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { WordsPullUp } from "@/components/ui/prisma-hero";
+import { FlowButton } from "@/components/ui/flow-button";
 import { ORGANIZERS } from "@/lib/organizers";
 
 const FEATURES = [
@@ -35,8 +37,8 @@ const EVENTS = [
 
 const STATS = [
   { value: "11", label: "Organizers" },
-  { value: "1", label: "Campus, unified" },
-  { value: "100%", label: "On the record" },
+  { value: "5", label: "Colleges" },
+  { value: "Live", label: "Updates" },
 ];
 
 export default function LandingPage() {
@@ -55,17 +57,16 @@ export default function LandingPage() {
 
           <h1 className="mt-6 max-w-3xl font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
             <span className="block text-white">
-              <WordsPullUp text="Every campus event." />
+              <WordsPullUp text="Every campus event," />
             </span>
             <span className="block" style={{ color: "var(--accent)" }}>
-              <WordsPullUp text="One beautiful place." />
+              <WordsPullUp text="in one place." />
             </span>
           </h1>
 
           <Reveal delay={160}>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/75">
-              Discover what&apos;s happening across the colleges, departments, and centers of
-              Al Ain Campus — with posters, attendance, certificates, and reports built in.
+            <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/75">
+              What&apos;s on across Al Ain Campus — every college, department, and center.
             </p>
           </Reveal>
 
@@ -178,6 +179,12 @@ export default function LandingPage() {
             </Reveal>
           ))}
         </div>
+
+        <Reveal className="mt-10 flex justify-center">
+          <Link href="/events">
+            <FlowButton text="See all events" />
+          </Link>
+        </Reveal>
       </section>
 
       {/* ============ ORGANIZERS ============ */}
@@ -246,6 +253,19 @@ export default function LandingPage() {
             );
           })}
         </div>
+      </section>
+
+      {/* ============ CAMPUS VIDEO ============ */}
+      <section className="mx-auto max-w-5xl px-6 pb-24">
+        <Reveal>
+          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
+            Life at ADU
+          </p>
+          <h2 className="mt-3 mb-8 max-w-2xl font-display text-4xl font-bold leading-tight text-[var(--text-primary)] sm:text-5xl">
+            A look around Al Ain Campus.
+          </h2>
+          <YouTubeEmbed id="AY_uWLK1LOU" title="Abu Dhabi University — Al Ain Campus" />
+        </Reveal>
       </section>
 
       {/* ============ CTA BAND ============ */}

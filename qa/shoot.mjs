@@ -12,8 +12,10 @@ const VIEWPORTS = [
 
 const PAGES = [
   { name: "landing", path: "/" },
+  { name: "events", path: "/events" },
   { name: "admin-login", path: "/admin/login" },
   { name: "admin-dashboard", path: "/admin" },
+  { name: "not-found", path: "/this-page-does-not-exist" },
 ];
 
 // SwiftShader gives headless Chromium a working WebGL context for the shader.

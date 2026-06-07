@@ -48,5 +48,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Run on everything except static assets and the hero media.
-  matcher: ["/((?!_next/static|_next/image|media|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|media|brand|favicon.ico).*)"],
 };

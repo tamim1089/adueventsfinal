@@ -1,32 +1,31 @@
 import type { Metadata } from "next";
+import Logo from "@/components/Logo";
 import LoginForm from "./LoginForm";
+import InteractiveNeuralVortex from "@/components/ui/interactive-neural-vortex-background";
 
 export const metadata: Metadata = { title: "Sign in" };
 
 export default function AdminLoginPage() {
   return (
-    <div className="relative flex min-h-[100svh] items-center justify-center overflow-hidden px-6">
-      <div className="blob blob-a -left-20 top-10 h-80 w-80" style={{ background: "var(--accent)" }} />
-      <div className="blob blob-b -right-20 bottom-0 h-96 w-96" style={{ background: "var(--brand-navy)" }} />
+    <div className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-black px-6 py-12">
+      {/* recolored (ADU red) interactive neural vortex */}
+      <InteractiveNeuralVortex />
+      <div className="absolute inset-0 -z-10 bg-black/30" />
 
-      <div className="glass w-full max-w-sm p-8">
-        <div className="flex items-center gap-2.5">
-          <span
-            className="grid h-9 w-9 place-items-center rounded-[10px] font-display text-lg font-bold text-[var(--accent-on)]"
-            style={{ background: "var(--accent)" }}
-          >
-            A
-          </span>
+      <div className="w-full max-w-md rounded-[24px] border border-black/5 bg-white p-8 shadow-2xl">
+        <div className="flex items-center gap-3">
+          <Logo size={30} priority />
+          <div className="h-6 w-px bg-[var(--glass-border)]" />
           <span className="text-sm font-semibold text-[var(--text-primary)]">
             Al Ain Campus Events
           </span>
         </div>
 
-        <h1 className="mt-7 font-display text-3xl font-semibold text-[var(--text-primary)]">
+        <h1 className="mt-7 font-display text-3xl font-bold text-[var(--text-primary)]">
           Organizer sign in
         </h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          Access is scoped to your department. Contact campus IT for an account.
+          Use your ADU Microsoft account, or an email invite. Access is scoped to your department.
         </p>
 
         <LoginForm />

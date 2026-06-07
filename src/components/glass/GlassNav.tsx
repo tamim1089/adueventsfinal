@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Logo from "@/components/Logo";
 
 const LINKS = [
-  { href: "#showcase", label: "Overview" },
-  { href: "#events", label: "Events" },
-  { href: "#organizers", label: "Organizers" },
-  { href: "#features", label: "Features" },
+  { href: "/events", label: "Events" },
+  { href: "/#organizers", label: "Organizers" },
+  { href: "/#features", label: "Features" },
 ];
 
 // Floating nav. Over the dark hero (top) it's transparent with light text;
@@ -36,13 +36,7 @@ export default function GlassNav() {
         aria-label="Primary"
       >
         <Link href="/" className="flex items-center gap-2.5">
-          <span
-            className="grid h-8 w-8 place-items-center rounded-[10px] font-display text-lg font-bold text-[var(--accent-on)]"
-            style={{ background: "var(--accent)" }}
-            aria-hidden="true"
-          >
-            A
-          </span>
+          <Logo size={22} chip priority />
           <span className={`text-sm font-semibold tracking-tight ${textCls}`}>
             Al Ain Campus Events
           </span>
