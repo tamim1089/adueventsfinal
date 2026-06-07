@@ -1,0 +1,15 @@
+# Netlify config for the Next.js 16 app.
+# The official Next.js Runtime handles SSR, the proxy (middleware), next/image,
+# and route handlers — no code changes needed.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Next 16 requires Node >= 20.9. Pin a current LTS.
+  NODE_VERSION = "22"
+
+# Auto-installed by Netlify when it detects Next.js, but pin it explicitly.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
