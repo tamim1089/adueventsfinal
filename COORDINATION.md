@@ -208,5 +208,57 @@ Any unchecked box → not done.
 9. Surveys + responses.
 10. Reports (per-event) + annual reports.
 
-Status: scaffolded only. Nothing in §9 built yet.
+---
+
+## 12. Landing page (built) — design decisions
+
+Design intelligence: queried the `ui-ux-pro-max` skill — **Video-First Hero** pattern +
+**Modern Dark glassmorphism** + **Playfair Display / Inter** (premium + institutional).
+
+- **Background video** (`public/media/hero.mp4` 854K H.264 + `hero.webm` 64K VP9 + `hero-poster.jpg` 20K),
+  generated with ffmpeg: deep-navy field, two slow-drifting ADU-red/navy light blobs, grain, vignette.
+  Muted, looped, `playsInline`, `preload="metadata"`, `+faststart`. Content is a sibling on top — never blurred (A1).
+- **Reduced Motion / Save-Data → poster still** instead of playback (`VideoBackground.tsx`).
+- **Contrast scrim** (dual gradient) over the video so text passes AA on the worst frame — legibility is owned, not accidental (A7).
+- **Palette from the ADU logo:** navy `#0a0c16` canvas + ADU red `#f0273a` accent. One vivid accent, dark base, glass.
+- **Glass usage:** floating nav + sheets + CTA band use live `backdrop-filter` (`.glass`). All cards use
+  `.faux-glass` (tint + rim + shadow, no live blur) — GPU-cheap for long grids AND the Reduce-Transparency fallback.
+- **Reveal-on-scroll** is purely additive: content is visible by default, only hides when JS confirms motion is allowed
+  (so it can never hide content — the bug the screenshot QA caught and we fixed).
+
+## 13. Routes & structure (built)
+
+```
+src/app/(public)/page.tsx        # the landing page  → /
+src/app/(public)/layout.tsx      # glass nav shell
+src/app/(admin)/admin/page.tsx   # dashboard scaffold → /admin (sidebar, KPIs)
+src/app/(admin)/admin/login/     # login (page + LoginForm client) → /admin/login
+src/proxy.ts                     # Next 16 middleware → session refresh + /admin gate
+src/lib/supabase/{client,server}.ts   # anon-key clients (browser + server)
+src/lib/organizers.ts            # the 11 organizers (mirrors the DB seed)
+next.config.ts                   # CSP + security headers (HSTS/X-Frame/nosniff/permissions)
+supabase/migrations/0001_init.sql # schema + default-deny RLS + private buckets + seed
+qa/shoot.mjs + qa/shots/         # Playwright desktop(1440) + mobile(390) capture
+```
+
+Next 16 specifics honored: Turbopack default, `middleware`→**`proxy.ts`**, `next/font` self-hosts (no external font CDN → tighter CSP).
+
+## 14. Screenshot QA — current pass
+
+Captured at desktop 1440×900 and mobile 390×844, reduced-motion (also exercises the a11y fallback):
+landing · admin-login · admin-dashboard. Result: all surfaces render, text sharp on glass, no mid-word wrapping,
+nothing clipped, sidebar collapses to a scroll-nav on mobile, accent CTAs at full opacity. Re-run: `node qa/shoot.mjs`.
+
+> One real bug was caught and fixed by the screenshot, not the code: below-fold content was invisible because the
+> scroll-reveal hid it before the observer fired. Proof > code, as required.
+
+---
+
+## Status
+
+- ✅ Scaffold, env, tokens, glass system, fonts
+- ✅ Public landing page (video hero + all sections), responsive, screenshot-verified
+- ✅ Admin shell (login + dashboard), responsive, screenshot-verified
+- ✅ Backend setup: Supabase clients, auth proxy, full schema + RLS + storage + seed migration, security headers
+- ⏳ Next: connect a real Supabase project (`.env.local`), run `0001_init.sql`, then build §9 features in §11 order
 ```
