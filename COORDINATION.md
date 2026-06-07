@@ -272,7 +272,17 @@ shadcn convention path; alias `@/*` → `src/*`, so `@/components/ui/*` resolves
   `HeroBackground.tsx` which falls back to a static gradient under Reduce Motion / no-WebGL.
 - `shader-lines.tsx` (loads three.js from a **CDN**) — copied in as requested but **NOT wired into the live
   page**: the runtime CDN `<script>` violates our `script-src 'self'` CSP. Use `shader-animation.tsx` instead.
-- lucide-react icons on the feature cards.
+- `prisma-hero.tsx` (framer-motion) — copied in as requested. `"use client"` was **added** (the snippet omitted it;
+  hooks fail to import in the App Router without it). Its `PrismaHero` references a remote CDN video + a `primary`
+  color utility — kept as-is but **not** rendered live (CDN video would hit `media-src 'self'`). We DO use its
+  **`WordsPullUp`** word-by-word reveal on the hero headline.
+- lucide-react icons on the feature/event cards.
+
+`MotionProvider` (`MotionConfig reducedMotion="user"`) wraps the app so all framer-motion honors Reduce Motion.
+
+**Showcase image:** the scroll-tilt card shows the **public events page** (`showcase-public.png`), NOT the admin
+dashboard — deliberately, so the admin UI is never leaked on a public page. Cards were restyled (chips, LIVE badge,
+clock/pin icons, layered shadow + hover lift via `.card-hover`).
 
 Deps added: `framer-motion`, `three` (+`@types/three`), `lucide-react`.
 

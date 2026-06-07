@@ -7,10 +7,15 @@ import {
   MessageSquareText,
   Images,
   FileBarChart,
+  Clock,
+  MapPin,
+  ArrowUpRight,
+  Radio,
 } from "lucide-react";
 import HeroBackground from "@/components/landing/HeroBackground";
 import Reveal from "@/components/landing/Reveal";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+import { WordsPullUp } from "@/components/ui/prisma-hero";
 import { ORGANIZERS } from "@/lib/organizers";
 
 const FEATURES = [
@@ -20,6 +25,12 @@ const FEATURES = [
   { icon: MessageSquareText, title: "Post-event surveys", body: "Collect participant feedback with a survey attached to the event." },
   { icon: Images, title: "Photo galleries", body: "Document the day. Highlight campus life with post-event photos." },
   { icon: FileBarChart, title: "Reports & annual reviews", body: "Download per-event reports and publish each department's annual report." },
+];
+
+const EVENTS = [
+  { tag: "Innovation Center", title: "Founders & Funding Night", when: "Today · 6:00 PM", where: "Auditorium A", live: true },
+  { tag: "College of Engineering", title: "Robotics Showcase", when: "Today · 6:30 PM", where: "Lab Building 2", live: true },
+  { tag: "Library", title: "Research Skills Workshop", when: "Tomorrow · 11:00 AM", where: "Learning Commons", live: false },
 ];
 
 const STATS = [
@@ -42,14 +53,14 @@ export default function LandingPage() {
             </span>
           </Reveal>
 
-          <Reveal delay={80}>
-            <h1 className="mt-6 max-w-3xl font-display text-5xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Every campus event.
-              <span className="block" style={{ color: "var(--accent)" }}>
-                One beautiful place.
-              </span>
-            </h1>
-          </Reveal>
+          <h1 className="mt-6 max-w-3xl font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+            <span className="block text-white">
+              <WordsPullUp text="Every campus event." />
+            </span>
+            <span className="block" style={{ color: "var(--accent)" }}>
+              <WordsPullUp text="One beautiful place." />
+            </span>
+          </h1>
 
           <Reveal delay={160}>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/75">
@@ -90,25 +101,25 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ============ SHOWCASE (scroll-animation reveal) ============ */}
+      {/* ============ SHOWCASE (public experience — what anyone sees) ============ */}
       <section id="showcase" className="relative -mt-20">
         <ContainerScroll
           titleComponent={
             <div className="mb-4">
               <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
-                One workspace
+                For everyone on campus
               </p>
               <h2 className="mt-3 font-display text-4xl font-bold text-[var(--text-primary)] sm:text-6xl">
-                Manage it all from
+                Everything on campus,
                 <br />
-                <span className="text-4xl md:text-[5rem] font-bold leading-none">one dashboard.</span>
+                <span className="text-4xl md:text-[5rem] font-bold leading-none">in one place.</span>
               </h2>
             </div>
           }
         >
           <Image
-            src="/media/showcase.png"
-            alt="Al Ain Campus Events admin dashboard"
+            src="/media/showcase-public.png"
+            alt="The public Al Ain Campus Events page anyone can browse"
             height={900}
             width={1440}
             className="mx-auto h-full rounded-2xl object-cover object-left-top"
@@ -133,21 +144,35 @@ export default function LandingPage() {
         </Reveal>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { tag: "Innovation Center", title: "Founders & Funding Night", when: "Today · 6:00 PM", where: "Auditorium A" },
-            { tag: "College of Engineering", title: "Robotics Showcase", when: "Today · 6:30 PM", where: "Lab Building 2" },
-            { tag: "Library", title: "Research Skills Workshop", when: "Tomorrow · 11:00 AM", where: "Learning Commons" },
-          ].map((e, i) => (
+          {EVENTS.map((e, i) => (
             <Reveal key={e.title} delay={i * 90}>
-              <article className="faux-glass h-full p-6 transition-transform hover:-translate-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-                  <span className="truncate text-xs font-medium text-[var(--text-tertiary)]">{e.tag}</span>
+              <article className="faux-glass card-hover group flex h-full flex-col p-6">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-secondary)]">
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
+                    <span className="max-w-[10rem] truncate">{e.tag}</span>
+                  </span>
+                  {e.live && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                      style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
+                    >
+                      <Radio size={11} strokeWidth={2.5} /> Live
+                    </span>
+                  )}
                 </div>
-                <h3 className="mt-3 font-display text-2xl font-semibold text-[var(--text-primary)]">{e.title}</h3>
-                <div className="mt-5 space-y-1.5 text-sm">
-                  <p className="font-semibold text-[var(--text-primary)]">{e.when}</p>
-                  <p className="text-[var(--text-secondary)]">{e.where}</p>
+
+                <h3 className="mt-4 font-display text-2xl font-semibold leading-tight text-[var(--text-primary)]">
+                  {e.title}
+                </h3>
+
+                <div className="mt-auto space-y-2 pt-6 text-sm">
+                  <p className="flex items-center gap-2 font-semibold text-[var(--text-primary)]">
+                    <Clock size={15} className="shrink-0 text-[var(--text-tertiary)]" /> {e.when}
+                  </p>
+                  <p className="flex items-center gap-2 text-[var(--text-secondary)]">
+                    <MapPin size={15} className="shrink-0 text-[var(--text-tertiary)]" /> {e.where}
+                  </p>
                 </div>
               </article>
             </Reveal>
@@ -166,17 +191,25 @@ export default function LandingPage() {
               Eleven ways in.
             </h2>
           </Reveal>
-          <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {ORGANIZERS.map((o, i) => (
               <Reveal key={o.slug} delay={(i % 4) * 60}>
                 <a
                   href="#events"
-                  className="faux-glass flex h-full min-h-24 flex-col justify-between p-4 transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
+                  className="faux-glass card-hover group flex h-full min-h-28 flex-col justify-between p-5"
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {o.kind}
+                  <div className="flex items-start justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {o.kind}
+                    </span>
+                    <ArrowUpRight
+                      size={16}
+                      className="text-[var(--text-tertiary)] opacity-0 transition-all group-hover:opacity-100 group-hover:text-[var(--accent)]"
+                    />
+                  </div>
+                  <span className="mt-3 text-sm font-semibold leading-snug text-[var(--text-primary)]">
+                    {o.name}
                   </span>
-                  <span className="mt-2 text-sm font-medium leading-snug text-[var(--text-primary)]">{o.name}</span>
                 </a>
               </Reveal>
             ))}
@@ -199,14 +232,14 @@ export default function LandingPage() {
             const Icon = f.icon;
             return (
               <Reveal key={f.title} delay={(i % 3) * 80}>
-                <div className="faux-glass h-full p-6">
+                <div className="faux-glass card-hover h-full p-6">
                   <span
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-[14px]"
+                    className="inline-flex h-12 w-12 items-center justify-center rounded-2xl"
                     style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
                   >
                     <Icon size={22} strokeWidth={2} aria-hidden="true" />
                   </span>
-                  <h3 className="mt-4 font-display text-xl font-semibold text-[var(--text-primary)]">{f.title}</h3>
+                  <h3 className="mt-5 font-display text-xl font-semibold text-[var(--text-primary)]">{f.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{f.body}</p>
                 </div>
               </Reveal>

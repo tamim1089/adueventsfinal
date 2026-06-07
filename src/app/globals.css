@@ -101,14 +101,42 @@ body {
   pointer-events: none;
 }
 
-/* ---- Faux-glass card (light): solid-ish surface, no live blur. -
+/* ---- Card (light): solid surface, layered soft shadow, no live blur. -
    GPU-cheap for long lists; doubles as Reduce-Transparency fallback. */
 .faux-glass {
   position: relative;
-  background: var(--bg-elevated);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fdfdfe 100%);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-xl);
+  box-shadow:
+    0 1px 2px rgba(20, 28, 55, 0.04),
+    0 6px 16px rgba(20, 28, 55, 0.05),
+    0 18px 40px rgba(20, 28, 55, 0.05);
+}
+/* faint top highlight so cards read as raised, not flat */
+.faux-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 40%;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent);
+  pointer-events: none;
+}
+
+/* interactive cards: smooth lift + accent-tinted edge on hover */
+.card-hover {
+  transition: transform 0.28s var(--ease), box-shadow 0.28s var(--ease),
+    border-color 0.28s var(--ease);
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--glass-border));
+  box-shadow:
+    0 2px 4px rgba(20, 28, 55, 0.05),
+    0 12px 28px rgba(20, 28, 55, 0.09),
+    0 28px 60px rgba(225, 29, 46, 0.08);
 }
 
 /* ambient drifting light blobs (atmosphere only) */
