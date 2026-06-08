@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import Logo from "@/components/Logo";
 
 const LINKS = [
-  { href: "/events", label: "Events" },
+  { href: "/events",      label: "Events"     },
   { href: "/#organizers", label: "Organizers" },
-  { href: "/#features", label: "Features" },
+  { href: "/#features",   label: "Features"   },
 ];
 
-// Floating nav. Over the dark hero (top) it's transparent with light text;
-// once scrolled onto the light page it becomes light glass with dark text.
 export default function GlassNav() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]         = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -23,9 +21,8 @@ export default function GlassNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const onLight = scrolled; // dark text when scrolled
-  const textCls = onLight ? "text-[var(--text-primary)]" : "text-white";
-  const subTextCls = onLight ? "text-[var(--text-secondary)]" : "text-white/70";
+  const textCls    = scrolled ? "text-[var(--text-primary)]"   : "text-white";
+  const subTextCls = scrolled ? "text-[var(--text-secondary)]" : "text-white/70";
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -36,7 +33,27 @@ export default function GlassNav() {
         aria-label="Primary"
       >
         <Link href="/" className="flex items-center gap-2.5">
-          <Logo size={22} chip priority />
+          {scrolled ? (
+            /* Light mode — logo has its own colors, render directly */
+            <Image
+              src="/brand/ADU_Logo.png"
+              alt="Abu Dhabi University"
+              width={32} height={24}
+              priority
+              style={{ height: 24, width: "auto", objectFit: "contain" }}
+            />
+          ) : (
+            /* Dark hero — wrap in white chip so logo is legible */
+            <span className="inline-flex items-center justify-center rounded-xl bg-white px-2.5 py-1.5 shadow-sm">
+              <Image
+                src="/brand/ADU_Logo.png"
+                alt="Abu Dhabi University"
+                width={32} height={22}
+                priority
+                style={{ height: 22, width: "auto", objectFit: "contain" }}
+              />
+            </span>
+          )}
           <span className={`text-sm font-semibold tracking-tight ${textCls}`}>
             ADU Events
           </span>
@@ -46,8 +63,7 @@ export default function GlassNav() {
         <div className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (
             <a
-              key={l.href}
-              href={l.href}
+              key={l.href} href={l.href}
               className={`rounded-full px-3.5 py-2 text-sm transition-colors hover:text-[var(--accent)] ${subTextCls}`}
             >
               {l.label}
@@ -62,7 +78,7 @@ export default function GlassNav() {
           </Link>
         </div>
 
-        {/* mobile toggle — 44px target */}
+        {/* mobile toggle */}
         <button
           onClick={() => setOpen((v) => !v)}
           className={`grid h-11 w-11 place-items-center rounded-full md:hidden ${textCls}`}
@@ -73,13 +89,12 @@ export default function GlassNav() {
         </button>
       </nav>
 
-      {/* mobile sheet (always light glass for legibility) */}
+      {/* mobile sheet */}
       {open && (
         <div className="glass absolute inset-x-4 top-[calc(100%+0.5rem)] flex flex-col gap-1 p-3 md:hidden">
           {LINKS.map((l) => (
             <a
-              key={l.href}
-              href={l.href}
+              key={l.href} href={l.href}
               onClick={() => setOpen(false)}
               className="rounded-[14px] px-4 py-3 text-base text-[var(--text-primary)]"
             >

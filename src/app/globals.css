@@ -340,3 +340,101 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .cosmic-stars, .cosmic-stars-medium, .cosmic-stars-large, #title { animation: none !important; }
 }
+
+/* ============================================================
+   DARK MODE TOKENS
+   Toggle via: document.documentElement.classList.toggle("dark")
+   ============================================================ */
+html.dark {
+  color-scheme: dark;
+
+  /* canvas */
+  --bg-base:     #0c0e18;
+  --bg-elevated: #13162a;
+  --bg-subtle:   #181c30;
+
+  /* text */
+  --text-primary:   #f0f2ff;
+  --text-secondary: #8a93b8;
+  --text-tertiary:  #4d5470;
+
+  /* glass (dark) */
+  --glass-fill:        rgba(20, 24, 48, 0.70);
+  --glass-fill-strong: rgba(20, 24, 48, 0.88);
+  --glass-rim:         rgba(255, 255, 255, 0.08);
+  --glass-border:      rgba(255, 255, 255, 0.06);
+  --glass-shadow:      0 8px 28px rgba(0, 0, 0, 0.40);
+  --glass-shadow-lg:   0 24px 60px rgba(0, 0, 0, 0.55);
+
+  /* shadcn tokens (dark) */
+  --background:             #0c0e18;
+  --foreground:             #f0f2ff;
+  --card:                   #13162a;
+  --card-foreground:        #f0f2ff;
+  --popover:                #13162a;
+  --popover-foreground:     #f0f2ff;
+  --secondary:              #181c30;
+  --secondary-foreground:   #f0f2ff;
+  --muted:                  #181c30;
+  --muted-foreground:       #8a93b8;
+  --shadcn-accent:          #1e2240;
+  --shadcn-accent-foreground: #f0f2ff;
+  --border:                 rgba(255,255,255,0.07);
+  --input:                  rgba(255,255,255,0.07);
+}
+
+/* Dark mode: faux-glass uses dark surface */
+html.dark .faux-glass {
+  background: linear-gradient(180deg, #191c32 0%, #14172c 100%);
+  border-color: rgba(255,255,255,0.07);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.2),
+    0 6px 16px rgba(0,0,0,0.25),
+    0 18px 40px rgba(0,0,0,0.25);
+}
+
+/* Dark mode: light pages feel fully dark */
+html.dark body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   DARK MODE CARD / GLASS FIXES
+   The white ::after pseudo-element on .faux-glass reads as a
+   bright top stripe in dark mode — kill it.  Also ensure glass
+   borders and shadows are dark-appropriate.
+   ============================================================ */
+html.dark .faux-glass {
+  background: linear-gradient(180deg, #191c32 0%, #14172c 100%);
+  border-color: rgba(255,255,255,0.06);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.30),
+    0 6px 16px rgba(0,0,0,0.35),
+    0 18px 40px rgba(0,0,0,0.30);
+}
+
+/* The ::after highlight is the white strip at the top of cards — remove in dark */
+html.dark .faux-glass::after {
+  display: none;
+}
+
+/* Glassmorphism panels in dark: darker fill, no white rim bleed */
+html.dark .glass {
+  background: rgba(15, 18, 36, 0.78);
+  border-color: rgba(255,255,255,0.07);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.50);
+}
+html.dark .glass::before {
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 60%);
+}
+
+/* Dark-mode card-hover: red accent shadow, no light box-shadow */
+html.dark .card-hover:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent) 35%, rgba(255,255,255,0.06));
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.3),
+    0 12px 28px rgba(0,0,0,0.4),
+    0 28px 60px rgba(225,29,46,0.12);
+}

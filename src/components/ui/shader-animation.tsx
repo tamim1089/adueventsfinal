@@ -9,133 +9,115 @@ export function ShaderAnimation() {
     camera: THREE.Camera
     scene: THREE.Scene
     renderer: THREE.WebGLRenderer
-    uniforms: any
+    uniforms: Record<string, { value: unknown }>
     animationId: number
   } | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return
-
     const container = containerRef.current
 
-    // Vertex shader
-    const vertexShader = `
-      void main() {
-        gl_Position = vec4( position, 1.0 );
-      }
-    `
+    const vertexShader = `void main() { gl_Position = vec4(position, 1.0); }`
 
-    // Fragment shader
+    // Calmer shader: fewer lines, monochrome red/dark palette, slower movement.
+    // uBlackout drives the random "dark screen" moments (0 = lit, 1 = black).
     const fragmentShader = `
-      #define TWO_PI 6.2831853072
-      #define PI 3.14159265359
-
       precision highp float;
-      uniform vec2 resolution;
+      uniform vec2  resolution;
       uniform float time;
+      uniform float uBlackout;
 
-      float rand(float n){ return fract(sin(n) * 43758.5453123); }
+      float rand(float n){ return fract(sin(n) * 43758.5453); }
 
-      void main(void) {
+      void main() {
         vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-        float t = time*0.06;
-        float lineWidth = 0.0016;
+        float t  = time * 0.022;           // slow — was 0.06
+        float lw = 0.0018;
 
-        vec3 color = vec3(0.0);
-        // More lines, each with its own random speed + phase so new waves keep
-        // arriving at different moments (random, staggered) — never all at once,
-        // but always something on screen.
-        for(int j = 0; j < 3; j++){
-          for(int i=0; i < 8; i++){
-            float r = rand(float(i) * 2.17 + float(j) * 0.53);
-            float speed = 0.55 + 1.25 * r;                 // each line refreshes at its own pace
-            float phase = t * speed + r * 6.2831;          // random start offset
-            float spacing = 3.0 + 3.0 * rand(float(i) + 7.0);
-            color[j] += lineWidth*float(i*i) / abs(fract(phase - 0.01*float(j)) * spacing - length(uv) + mod(uv.x + uv.y, 0.2));
-          }
+        // Single colour channel (red-tinted monochrome) — replaces the RGB rainbow.
+        float blade = 0.0;
+        for (int i = 0; i < 6; i++) {     // 6 lines instead of 24
+          float r     = rand(float(i) * 1.93 + 0.71);
+          float speed = 0.3 + 0.6 * r;
+          float phase = t * speed + r * 6.2831;
+          float gap   = 4.0 + 3.0 * rand(float(i) + 5.0);
+          blade += lw * float(i * i) / abs(fract(phase) * gap - length(uv) + mod(uv.x + uv.y, 0.25));
         }
 
-        gl_FragColor = vec4(color[0],color[1],color[2],1.0);
+        // ADU palette: dark navy base, red-tinted blades
+        vec3 col = vec3(blade * 0.55, blade * 0.05, blade * 0.10);
+
+        // Blackout: multiply to zero for dark-flash moments
+        col *= (1.0 - uBlackout);
+
+        gl_FragColor = vec4(col, 1.0);
       }
     `
 
-    // Initialize Three.js scene
     const camera = new THREE.Camera()
     camera.position.z = 1
-
-    const scene = new THREE.Scene()
-    const geometry = new THREE.PlaneGeometry(2, 2)
-
+    const scene  = new THREE.Scene()
+    const geo    = new THREE.PlaneGeometry(2, 2)
     const uniforms = {
-      time: { type: "f", value: 1.0 },
-      resolution: { type: "v2", value: new THREE.Vector2() },
+      time:        { value: 1.0 },
+      resolution:  { value: new THREE.Vector2() },
+      uBlackout:   { value: 0.0 },
     }
-
-    const material = new THREE.ShaderMaterial({
-      uniforms: uniforms,
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-    })
-
-    const mesh = new THREE.Mesh(geometry, material)
-    scene.add(mesh)
+    const mat  = new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader })
+    scene.add(new THREE.Mesh(geo, mat))
 
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(window.devicePixelRatio)
-
     container.appendChild(renderer.domElement)
 
-    // Handle window resize
-    const onWindowResize = () => {
-      const width = container.clientWidth
-      const height = container.clientHeight
-      renderer.setSize(width, height)
-      uniforms.resolution.value.x = renderer.domElement.width
-      uniforms.resolution.value.y = renderer.domElement.height
+    const onResize = () => {
+      const w = container.clientWidth, h = container.clientHeight
+      renderer.setSize(w, h)
+      ;(uniforms.resolution.value as THREE.Vector2).set(renderer.domElement.width, renderer.domElement.height)
     }
+    onResize()
+    window.addEventListener("resize", onResize, false)
 
-    // Initial resize
-    onWindowResize()
-    window.addEventListener("resize", onWindowResize, false)
+    // ------- dark-flash scheduler -------
+    // Every 4-9 s a random blade flash:  ~2 s black, then fade back in.
+    let blackout = 0.0        // current value (smooth lerp target)
+    let isBlack  = false
+    let flashTimer: ReturnType<typeof setTimeout>
 
-    // Animation loop
+    const scheduleNext = () => {
+      const wait = 4000 + Math.random() * 5000   // 4–9 s between flashes
+      flashTimer = setTimeout(() => {
+        isBlack = true
+        // after 1.8–2.2 s, return to blades
+        setTimeout(() => { isBlack = false; scheduleNext() }, 1800 + Math.random() * 400)
+      }, wait)
+    }
+    scheduleNext()
+
+    sceneRef.current = { camera, scene, renderer, uniforms, animationId: 0 }
+
     const animate = () => {
-      const animationId = requestAnimationFrame(animate)
-      uniforms.time.value += 0.05
+      const id = requestAnimationFrame(animate)
+      if (sceneRef.current) sceneRef.current.animationId = id
+
+      // Lerp blackout smoothly
+      const target = isBlack ? 1.0 : 0.0
+      blackout += (target - blackout) * 0.06
+      uniforms.uBlackout.value = blackout
+      uniforms.time.value      += 0.04   // slower tick
+
       renderer.render(scene, camera)
-
-      if (sceneRef.current) {
-        sceneRef.current.animationId = animationId
-      }
     }
-
-    // Store scene references for cleanup
-    sceneRef.current = {
-      camera,
-      scene,
-      renderer,
-      uniforms,
-      animationId: 0,
-    }
-
-    // Start animation
     animate()
 
-    // Cleanup function
     return () => {
-      window.removeEventListener("resize", onWindowResize)
-
-      if (sceneRef.current) {
-        cancelAnimationFrame(sceneRef.current.animationId)
-
-        if (container && sceneRef.current.renderer.domElement) {
-          container.removeChild(sceneRef.current.renderer.domElement)
-        }
-
-        sceneRef.current.renderer.dispose()
-        geometry.dispose()
-        material.dispose()
-      }
+      clearTimeout(flashTimer)
+      window.removeEventListener("resize", onResize)
+      if (sceneRef.current) cancelAnimationFrame(sceneRef.current.animationId)
+      if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement)
+      renderer.dispose()
+      geo.dispose()
+      mat.dispose()
     }
   }, [])
 
@@ -143,10 +125,7 @@ export function ShaderAnimation() {
     <div
       ref={containerRef}
       className="w-full h-screen"
-      style={{
-        background: "#000",
-        overflow: "hidden",
-      }}
+      style={{ background: "#000", overflow: "hidden" }}
     />
   )
 }
