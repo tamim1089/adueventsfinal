@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/events",           label: "Events"           },
@@ -14,6 +15,12 @@ const LINKS = [
 export default function GlassNav() {
   const [open, setOpen]         = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const pathname                = usePathname();
+
+  // If we are not on the home page, we always want the "scrolled" look (dark text, glass background)
+  // because other pages have light backgrounds.
+  const isHome = pathname === "/";
+  const effectivelyScrolled = scrolled || !isHome;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -22,19 +29,19 @@ export default function GlassNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const textCls    = scrolled ? "text-[var(--text-primary)]"   : "text-white";
-  const subTextCls = scrolled ? "text-[var(--text-secondary)]" : "text-white/70";
+  const textCls    = effectivelyScrolled ? "text-[var(--text-primary)]"   : "text-white";
+  const subTextCls = effectivelyScrolled ? "text-[var(--text-secondary)]" : "text-white/70";
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
       <nav
         className={`flex w-full max-w-5xl items-center justify-between gap-4 rounded-[20px] px-4 py-3 transition-all duration-300 ${
-          scrolled ? "glass" : "border border-white/10 bg-white/5 backdrop-blur-md"
+          effectivelyScrolled ? "glass" : "border border-white/10 bg-white/5 backdrop-blur-md"
         }`}
         aria-label="Primary"
       >
         <Link href="/" className="flex items-center gap-2.5">
-          {scrolled ? (
+          {effectivelyScrolled ? (
             /* Light mode — logo has its own colors, render directly */
             <Image
               src="/brand/ADU_Logo.png"
