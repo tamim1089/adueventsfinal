@@ -5,9 +5,10 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 const LINKS = [
-  { href: "/events",      label: "Events"     },
-  { href: "/#organizers", label: "Organizers" },
-  { href: "/#features",   label: "Features"   },
+  { href: "/events",           label: "Events"           },
+  { href: "/partnerships",     label: "Partnerships & MoUs" },
+  { href: "/#organizers",      label: "Organizers"       },
+  { href: "/#features",        label: "Features"         },
 ];
 
 export default function GlassNav() {
