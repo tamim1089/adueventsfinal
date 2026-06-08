@@ -48,13 +48,6 @@ export default function LandingPage() {
       <section className="relative flex min-h-[100svh] items-center overflow-hidden">
         <HeroBackground />
         <div className="mx-auto w-full max-w-6xl px-6 pt-32 pb-24">
-          <Reveal>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium tracking-wide text-white/80 backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-              Abu Dhabi University
-            </span>
-          </Reveal>
-
           <h1 className="mt-6 max-w-3xl font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
             <span className="block text-white">
               <WordsPullUp text="Every ADU event," />
