@@ -241,18 +241,26 @@ export default function EventsBrowser() {
     <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-28 sm:pt-32 pb-24 w-full">
 
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
-            Events
-          </p>
-          <h1 className="mt-2 font-display text-4xl sm:text-5xl font-bold text-[var(--text-primary)]">
-            What&apos;s on at ADU
-          </h1>
-        </div>
+      <div className="flex flex-col gap-6 mb-12">
+        <Reveal>
+          <Image
+            src="/brand/adu-logo-transparent.png"
+            alt="Abu Dhabi University"
+            width={120}
+            height={40}
+            className="h-10 w-auto object-contain"
+            priority
+          />
+        </Reveal>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="font-display text-4xl sm:text-5xl font-bold text-[var(--text-primary)]">
+              Events
+            </h1>
+          </div>
 
-        {/* Tab toggle */}
-        <div className="inline-flex h-10 rounded-xl bg-[var(--bg-subtle)] p-0.5">
+          {/* Tab toggle */}
+          <div className="inline-flex h-10 rounded-xl bg-[var(--bg-subtle)] p-0.5">
           <RadioGroup
             value={tab}
             onValueChange={(v) => setTab(v as "upcoming" | "past")}

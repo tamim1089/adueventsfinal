@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Building2, GraduationCap, Building, Mail, Globe, LucideIcon } from "lucide-react";
 import Reveal from "@/components/landing/Reveal";
 import { PARTNERS_DATA, type Partner } from "@/lib/partnerships-data";
@@ -98,11 +99,16 @@ export default function PartnershipsPage() {
       {/* Header */}
       <Reveal className="mb-16">
         <div className="max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
-            Collaboration
-          </p>
-          <h1 className="mt-2 font-display text-4xl sm:text-5xl font-bold text-[var(--text-primary)]">
-            Partnerships & MoUs
+          <Image
+            src="/brand/adu-logo-transparent.png"
+            alt="Abu Dhabi University"
+            width={120}
+            height={40}
+            className="mb-8 h-10 w-auto object-contain"
+            priority
+          />
+          <h1 className="font-display text-4xl sm:text-5xl font-bold text-[var(--text-primary)]">
+            Partnerships
           </h1>
           <p className="mt-4 text-lg text-[var(--text-secondary)] leading-relaxed">
             Abu Dhabi University works closely with leading government entities, global corporations, 
