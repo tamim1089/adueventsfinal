@@ -33,6 +33,15 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Ensure the certificate base PDF + embedded fonts are traced into the
+  // serverless function that renders certificates (they live under public/
+  // and src/, which aren't bundled into route functions by default).
+  outputFileTracingIncludes: {
+    "/api/certificate": [
+      "./public/cert-templates/**",
+      "./src/lib/certificates/fonts/**",
+    ],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

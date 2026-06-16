@@ -86,3 +86,35 @@ dashboard instead (step 3.3).
 - **Run in Supabase:** `supabase/migrations/0001_init.sql` (SQL Editor).
 - **Copy from Supabase** (Settings → API): Project URL + `anon` key + `service_role` key.
 - **Paste into:** `.env.local` (local) and Netlify **Environment variables** (prod).
+
+## Certificates
+
+Registering for an event issues a **certificate of attendance** (PDF) carrying
+the recipient's name + a per-event description, stamped onto the ADU template.
+
+**Working path (live now, no DB):** the public event page → "Register to
+attend" form → `POST /api/certificate` (Node runtime) renders the PDF with
+`pdf-lib` (base at `public/cert-templates/udl-base.pdf`, fonts under
+`src/lib/certificates/fonts/`) and streams it back for instant download.
+`next.config.ts` traces those assets into the function via
+`outputFileTracingIncludes`.
+
+**To recalibrate the template:** edit coordinates in
+`src/lib/certificates/templates.ts`, run `node scripts/test-cert.mjs`, and open
+`/tmp/cert-sample.pdf`.
+
+**Persistence layer (scaffolded, not yet wired):** to record attendees + store
+issued PDFs idempotently with an unguessable serial and signed-URL downloads:
+1. Migrate the public events from `src/lib/events-data.ts` into the Supabase
+   `events` table (the public pages currently read the static array; the DB has
+   no events yet). Each needs a `slug` and `status='published'`.
+2. Apply `supabase/migrations/0002_certificates.sql` (`supabase db push`) — adds
+   `slug` + `certificate_*` columns to `events`, the per-event/email unique
+   index on `attendees`, and the `certificates` storage policy.
+3. `SUPABASE_SERVICE_ROLE_KEY` is already in `.env.local`/Netlify; it is used
+   **only** by `src/lib/supabase/admin.ts` (server-only). Never import it client-side.
+4. Swap the `/api/certificate` route for a Server Action that: validates the
+   event is published, upserts the attendee (dedup via the unique index),
+   uploads the PDF to the private `certificates` bucket at
+   `${event.id}/${attendee.id}.pdf`, inserts a `certificates` row, and returns a
+   short-TTL signed URL. Re-registration reuses the same serial (idempotent).

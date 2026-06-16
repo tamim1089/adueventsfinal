@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Clock, MapPin, Users } from "lucide-react";
 import type { EventItem } from "@/lib/events-data";
+import CertificateRegister from "./CertificateRegister";
 
 const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
 const EASE = [0.2, 0.8, 0.2, 1] as const;
@@ -101,12 +102,7 @@ export default function EventDetail({
                 ))}
               </dl>
 
-              <button
-                className="mt-6 w-full rounded-full py-3.5 text-base font-semibold text-[var(--accent-on)] transition-transform active:scale-[0.98]"
-                style={{ background: "var(--accent)" }}
-              >
-                Register to attend
-              </button>
+              <CertificateRegister slug={event.slug} title={event.title} />
             </div>
           </FadeUp>
 
