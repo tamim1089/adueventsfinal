@@ -2,6 +2,7 @@
 // the anon key; falls back to the static seed when the DB is empty or
 // unreachable — so the site works before AND after `0003_phase1.sql` is run,
 // and flips to live data automatically once the DB is seeded.
+import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { EVENTS_DATA, type EventItem } from "@/lib/events-data";
 import { SCHOOLS, type School } from "@/lib/schools-data";
@@ -15,9 +16,11 @@ export type Event = EventItem & {
   contactHours?: string | null;
 };
 
+// Server-only reads. Prefer the service-role key (bypasses RLS, always works
+// server-side); fall back to the anon key. Never imported by client code.
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const sb = url && anon ? createClient(url, anon, { auth: { persistSession: false } }) : null;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const sb = url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
 
 function formatWhen(iso: string): string {
   const d = new Date(iso);
