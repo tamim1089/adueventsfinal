@@ -222,7 +222,7 @@ export default function LandingPage() {
           <ul className="lg:col-span-8">
             {ORGANIZERS.map((o, i) => (
               <li key={o.slug}>
-                <a
+                <Link
                   href="/events"
                   className="group grid grid-cols-[2.5rem_1fr_auto] items-center gap-4 border-t border-[var(--glass-border)] py-5 last:border-b"
                 >
@@ -241,7 +241,7 @@ export default function LandingPage() {
                       className="-translate-x-1 text-[var(--text-tertiary)] opacity-0 transition-all group-hover:translate-x-0 group-hover:text-[var(--accent)] group-hover:opacity-100"
                     />
                   </span>
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

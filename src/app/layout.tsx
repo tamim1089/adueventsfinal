@@ -3,6 +3,7 @@ import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import MotionProvider from "@/components/MotionProvider";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Toaster } from "@/components/ui/sonner";
 
 // Serif display face — optical-sizing, editorial, "expensive". The single
 // biggest lever away from a generic sans-only look. Variable font → full
@@ -51,6 +52,7 @@ export default function RootLayout({
       <body className="min-h-full">
         <LoadingScreen />
         <MotionProvider>{children}</MotionProvider>
+        <Toaster />
       </body>
     </html>
   );

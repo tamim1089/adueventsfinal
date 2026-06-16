@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Send, CalendarDays } from "lucide-react";
@@ -38,24 +38,16 @@ export function ActionSearchBar({
   onSelect,
 }: ActionSearchBarProps) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Action[] | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const debouncedQuery = useDebounce(query, 180);
 
-  useEffect(() => {
-    if (!isFocused) {
-      setResults(null);
-      return;
-    }
-    if (!debouncedQuery.trim()) {
-      setResults(actions);
-      return;
-    }
+  // Derive results during render (no setState-in-effect).
+  const results = useMemo<Action[] | null>(() => {
+    if (!isFocused) return null;
     const q = debouncedQuery.toLowerCase().trim();
-    setResults(
-      actions.filter((a) =>
-        `${a.label} ${a.description ?? ""} ${a.end ?? ""}`.toLowerCase().includes(q)
-      )
+    if (!q) return actions;
+    return actions.filter((a) =>
+      `${a.label} ${a.description ?? ""} ${a.end ?? ""}`.toLowerCase().includes(q)
     );
   }, [debouncedQuery, isFocused, actions]);
 
