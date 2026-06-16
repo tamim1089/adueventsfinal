@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   CalendarDays, Radio, BadgeCheck, MessageSquareText,
-  Images, FileBarChart, Users, TrendingUp, Clock,
-  ArrowUpRight, Plus, Bell, Search, ChevronRight,
+  Images, FileBarChart, Users, Clock,
+  ArrowUpRight, Plus, Bell, Search,
   Activity, Award, ClipboardList,
 } from "lucide-react";
+import { EVENTS_DATA } from "@/lib/events-data";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -19,90 +20,65 @@ const NAV_ITEMS = [
   { label: "Reports",      icon: FileBarChart,  active: false },
 ];
 
+// Real, derivable figures — no invented metrics, no "—" placeholders.
+const upcoming = EVENTS_DATA.upcoming;
+const past = EVENTS_DATA.past;
+const liveNow = upcoming.filter((e) => e.when.startsWith("Today")).length;
+
 const KPIS = [
-  { value: "—", label: "Published events",  icon: CalendarDays,      delta: null },
-  { value: "—", label: "Live now",          icon: Radio,             delta: null },
-  { value: "—", label: "Certificates",      icon: BadgeCheck,        delta: null },
-  { value: "—", label: "Survey responses",  icon: MessageSquareText, delta: null },
+  { value: upcoming.length + past.length, label: "Published events", icon: CalendarDays },
+  { value: liveNow,                        label: "Live now",         icon: Radio },
+  { value: 0,                              label: "Certificates",     icon: BadgeCheck },
+  { value: 0,                              label: "Survey responses", icon: MessageSquareText },
 ];
 
 const QUICK_ACTIONS = [
-  { label: "Create event",      icon: Plus,          desc: "Publish a new event"           },
-  { label: "Upload attendance", icon: Users,          desc: "Import CSV or scan QR codes"   },
-  { label: "Issue certificates",icon: BadgeCheck,     desc: "Send to verified attendees"    },
-  { label: "Add photos",        icon: Images,         desc: "Document the event"            },
-  { label: "New survey",        icon: MessageSquareText, desc: "Collect post-event feedback"},
-  { label: "Download report",   icon: FileBarChart,   desc: "Export PDF or Excel"           },
+  { label: "Create event",       icon: Plus,              desc: "Publish a new event" },
+  { label: "Upload attendance",  icon: Users,             desc: "Import CSV or scan QR codes" },
+  { label: "Issue certificates", icon: BadgeCheck,        desc: "Send to verified attendees" },
+  { label: "Add photos",         icon: Images,            desc: "Document the event" },
+  { label: "New survey",         icon: MessageSquareText, desc: "Collect post-event feedback" },
+  { label: "Download report",    icon: FileBarChart,      desc: "Export PDF or Excel" },
 ];
 
-const RECENT = [
-  { title: "Founders & Funding Night", org: "Innovation Center", when: "Today · 6:00 PM",   status: "live"     },
-  { title: "Robotics Showcase",         org: "College of Eng.",  when: "Today · 6:30 PM",   status: "live"     },
-  { title: "Research Skills Workshop",  org: "Library",          when: "Tomorrow · 11 AM",  status: "upcoming" },
-  { title: "Industry Career Fair",      org: "Admission",        when: "Thu · 10:00 AM",    status: "upcoming" },
-];
+const RECENT = upcoming.map((e) => ({
+  title: e.title,
+  org: e.organizer,
+  when: e.when,
+  live: e.when.startsWith("Today"),
+}));
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg-base)" }}>
-
-      {/* ── Top Nav Bar ── */}
-      <header
-        className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b px-6 py-3"
-        style={{
-          background: "var(--glass-fill)",
-          backdropFilter: "blur(20px) saturate(160%)",
-          WebkitBackdropFilter: "blur(20px) saturate(160%)",
-          borderColor: "var(--glass-border)",
-        }}
-      >
+    <div className="min-h-screen bg-[var(--bg-base)]">
+      {/* ── Top bar ── */}
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-[var(--glass-border)] bg-[var(--bg-base)] px-6 py-3">
         <div className="flex items-center gap-3">
-          <Link href="/" className="text-sm font-semibold" style={{ color: "var(--accent)" }}>
+          <Link href="/" className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-[var(--accent)]">
             ← ADU Events
           </Link>
-          <span style={{ color: "var(--glass-border)" }}>|</span>
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Admin Dashboard</span>
+          <span className="text-[var(--glass-border)]">|</span>
+          <span className="text-sm font-semibold text-[var(--text-primary)]">Dashboard</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Search */}
-          <div
-            className="hidden md:flex items-center gap-2 rounded-full px-4 py-2 text-sm"
-            style={{ background: "var(--bg-subtle)", color: "var(--text-tertiary)" }}
-          >
+          <div className="hidden items-center gap-2 rounded-full border border-[var(--glass-border)] px-4 py-2 text-sm text-[var(--text-tertiary)] md:flex">
             <Search size={14} />
             <span>Search events…</span>
           </div>
-          {/* Notifications */}
-          <button
-            className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[var(--bg-subtle)]"
-            style={{ color: "var(--text-secondary)" }}
-          >
+          <button className="relative grid h-9 w-9 place-items-center rounded-full text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)]">
             <Bell size={18} />
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full" style={{ background: "var(--accent)" }} />
           </button>
-          {/* Avatar */}
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-full font-bold text-sm text-white"
-            style={{ background: "var(--accent)" }}
-          >
+          <div className="grid h-9 w-9 place-items-center rounded-full text-sm font-bold text-white" style={{ background: "var(--accent)" }}>
             A
           </div>
         </div>
       </header>
 
       <div className="flex">
-
         {/* ── Sidebar ── */}
-        <aside
-          className="hidden lg:flex flex-col gap-1 sticky top-[57px] h-[calc(100vh-57px)] w-64 shrink-0 overflow-y-auto p-4 border-r"
-          style={{
-            background: "var(--glass-fill)",
-            backdropFilter: "blur(20px) saturate(160%)",
-            WebkitBackdropFilter: "blur(20px) saturate(160%)",
-            borderColor: "var(--glass-border)",
-          }}
-        >
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-tertiary)" }}>
+        <aside className="sticky top-[57px] hidden h-[calc(100vh-57px)] w-64 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[var(--glass-border)] p-4 lg:flex">
+          <p className="mb-3 px-3 font-mono text-[0.625rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
             Navigation
           </p>
           {NAV_ITEMS.map((n) => {
@@ -110,129 +86,86 @@ export default function AdminDashboard() {
             return (
               <button
                 key={n.label}
-                className={`flex items-center gap-3 rounded-[14px] px-3.5 py-2.5 text-sm transition-all ${
-                  n.active ? "font-semibold" : "hover:bg-[var(--bg-subtle)]"
+                className={`flex items-center gap-3 border-l-2 px-3.5 py-2.5 text-sm transition-colors ${
+                  n.active
+                    ? "border-l-[var(--accent)] font-medium text-[var(--text-primary)]"
+                    : "border-l-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
-                style={n.active ? { background: "var(--accent)", color: "#fff" } : { color: "var(--text-secondary)" }}
               >
-                <Icon size={16} />
+                <Icon size={16} className={n.active ? "text-[var(--accent)]" : ""} />
                 {n.label}
-                {n.active && <ChevronRight size={14} className="ml-auto" />}
               </button>
             );
           })}
 
-          {/* Sidebar footer */}
-          <div className="mt-auto pt-4 border-t" style={{ borderColor: "var(--glass-border)" }}>
-            <div
-              className="rounded-[14px] p-3"
-              style={{ background: "var(--accent-soft)" }}
-            >
-              <p className="text-xs font-semibold" style={{ color: "var(--accent-strong)" }}>Connect Supabase</p>
-              <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-tertiary)" }}>
-                Add your credentials to enable live data.
+          <div className="mt-auto border-t border-[var(--glass-border)] pt-4">
+            <div className="border border-[var(--glass-border)] p-3" style={{ borderRadius: "var(--r-xl)" }}>
+              <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                Data source
+              </p>
+              <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-[var(--text-secondary)]">
+                Connect Supabase to enable live data.
               </p>
             </div>
           </div>
         </aside>
 
-        {/* ── Main Content ── */}
-        <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 space-y-6">
-
-          {/* Header row */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* ── Main ── */}
+        <main className="min-w-0 flex-1 space-y-10 p-6 lg:p-10">
+          {/* header row */}
+          <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h1 className="font-display text-3xl font-bold" style={{ color: "var(--text-primary)" }}>
+              <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
                 Overview
-              </h1>
-              <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
-                Your department's events at a glance.
               </p>
+              <h1 className="mt-2 font-display text-4xl font-bold tracking-[-0.02em] text-[var(--text-primary)]">
+                Your department, at a glance.
+              </h1>
             </div>
             <button
-              className="flex items-center gap-2 h-11 rounded-full px-5 text-sm font-semibold text-white shadow-lg transition-transform active:scale-[0.97]"
+              className="inline-flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold text-[var(--accent-on)] transition-transform active:scale-[0.97]"
               style={{ background: "var(--accent)" }}
             >
               <Plus size={16} /> New event
             </button>
           </div>
 
-          {/* KPI strip */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {/* KPI strip — bordered grid, mono tabular figures, no glows */}
+          <div className="grid grid-cols-2 gap-px border border-[var(--glass-border)] bg-[var(--glass-border)] lg:grid-cols-4" style={{ borderRadius: "var(--r-xl)", overflow: "hidden" }}>
             {KPIS.map((k) => {
               const Icon = k.icon;
               return (
-                <div
-                  key={k.label}
-                  className="relative overflow-hidden rounded-[22px] p-5 border"
-                  style={{
-                    background: "var(--glass-fill-strong)",
-                    backdropFilter: "blur(16px) saturate(160%)",
-                    WebkitBackdropFilter: "blur(16px) saturate(160%)",
-                    borderColor: "var(--glass-border)",
-                    boxShadow: "var(--glass-shadow)",
-                  }}
-                >
-                  {/* Icon badge */}
-                  <span
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl"
-                    style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
-                  >
-                    <Icon size={18} strokeWidth={2} />
-                  </span>
-                  <p className="mt-4 font-display text-3xl font-bold" style={{ color: "var(--text-primary)" }}>
+                <div key={k.label} className="flex flex-col gap-3 bg-[var(--bg-base)] p-6">
+                  <Icon size={18} strokeWidth={1.75} className="text-[var(--accent)]" />
+                  <p className="font-mono text-4xl font-semibold tabular-nums text-[var(--text-primary)]">
                     {k.value}
                   </p>
-                  <p className="mt-0.5 text-sm" style={{ color: "var(--text-secondary)" }}>{k.label}</p>
-
-                  {/* Decorative glow blob */}
-                  <div
-                    className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-20"
-                    style={{ background: "var(--accent)", filter: "blur(30px)" }}
-                  />
+                  <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                    {k.label}
+                  </p>
                 </div>
               );
             })}
           </div>
 
-          {/* Two-column: quick actions + recent events */}
-          <div className="grid gap-5 lg:grid-cols-5">
-
-            {/* Quick actions (3 cols) */}
-            <section
-              className="lg:col-span-3 rounded-[22px] border p-5"
-              style={{
-                background: "var(--glass-fill)",
-                backdropFilter: "blur(16px) saturate(160%)",
-                WebkitBackdropFilter: "blur(16px) saturate(160%)",
-                borderColor: "var(--glass-border)",
-                boxShadow: "var(--glass-shadow)",
-              }}
-            >
-              <h2 className="mb-4 font-display text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+          {/* quick actions + recent */}
+          <div className="grid gap-8 lg:grid-cols-5">
+            <section className="lg:col-span-3">
+              <h2 className="font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
                 Quick actions
               </h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="mt-4 grid grid-cols-1 gap-px border border-[var(--glass-border)] bg-[var(--glass-border)] sm:grid-cols-2" style={{ borderRadius: "var(--r-xl)", overflow: "hidden" }}>
                 {QUICK_ACTIONS.map((a) => {
                   const Icon = a.icon;
                   return (
                     <button
                       key={a.label}
-                      className="group flex items-start gap-3 rounded-[16px] border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
-                      style={{
-                        background: "var(--bg-elevated)",
-                        borderColor: "var(--glass-border)",
-                      }}
+                      className="group flex items-start gap-3 bg-[var(--bg-base)] p-5 text-left transition-colors hover:bg-[var(--bg-subtle)]"
                     >
-                      <span
-                        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors group-hover:bg-[var(--accent)] group-hover:text-white"
-                        style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
-                      >
-                        <Icon size={16} />
-                      </span>
+                      <Icon size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--accent)]" />
                       <div>
-                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{a.label}</p>
-                        <p className="text-[11px] mt-0.5" style={{ color: "var(--text-tertiary)" }}>{a.desc}</p>
+                        <p className="text-sm font-semibold text-[var(--text-primary)]">{a.label}</p>
+                        <p className="mt-0.5 text-[0.75rem] text-[var(--text-tertiary)]">{a.desc}</p>
                       </div>
                     </button>
                   );
@@ -240,121 +173,54 @@ export default function AdminDashboard() {
               </div>
             </section>
 
-            {/* Recent events (2 cols) */}
-            <section
-              className="lg:col-span-2 rounded-[22px] border p-5"
-              style={{
-                background: "var(--glass-fill)",
-                backdropFilter: "blur(16px) saturate(160%)",
-                WebkitBackdropFilter: "blur(16px) saturate(160%)",
-                borderColor: "var(--glass-border)",
-                boxShadow: "var(--glass-shadow)",
-              }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+            <section className="lg:col-span-2">
+              <div className="flex items-center justify-between">
+                <h2 className="font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
                   Recent
                 </h2>
-                <button className="text-xs font-semibold flex items-center gap-1" style={{ color: "var(--accent)" }}>
+                <Link href="/events" className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)]">
                   All events <ArrowUpRight size={12} />
-                </button>
+                </Link>
               </div>
-              <div className="flex flex-col gap-3">
+              <ul className="mt-4 border-y border-[var(--glass-border)] divide-y divide-[var(--glass-border)]">
                 {RECENT.map((r) => (
-                  <div
-                    key={r.title}
-                    className="flex items-center gap-3 rounded-[14px] border p-3 transition-all hover:border-[var(--accent)]/30"
-                    style={{ background: "var(--bg-elevated)", borderColor: "var(--glass-border)" }}
-                  >
+                  <li key={r.title} className="flex items-center gap-3 py-3.5">
                     <span
-                      className="flex h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ background: r.status === "live" ? "var(--accent)" : "var(--text-tertiary)" }}
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: r.live ? "var(--accent)" : "var(--text-tertiary)" }}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{r.title}</p>
-                      <p className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>{r.org}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-[11px] flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
-                        <Clock size={10} /> {r.when}
+                      <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{r.title}</p>
+                      <p className="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                        {r.org}
                       </p>
-                      {r.status === "live" && (
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase mt-1"
-                          style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
-                        >
-                          <Radio size={8} /> Live
-                        </span>
-                      )}
                     </div>
-                  </div>
+                    <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[0.6875rem] tabular-nums text-[var(--text-secondary)]">
+                      <Clock size={11} /> {r.when}
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </section>
           </div>
 
-          {/* Activity chart placeholder */}
-          <section
-            className="rounded-[22px] border p-5"
-            style={{
-              background: "var(--glass-fill)",
-              backdropFilter: "blur(16px) saturate(160%)",
-              WebkitBackdropFilter: "blur(16px) saturate(160%)",
-              borderColor: "var(--glass-border)",
-              boxShadow: "var(--glass-shadow)",
-            }}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="font-display text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-                  Activity
-                </h2>
-                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Event registrations this month</p>
-              </div>
-              <span className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: "var(--accent)" }}>
-                <TrendingUp size={16} /> Connect Supabase for live data
-              </span>
-            </div>
-            {/* Bar chart placeholder */}
-            <div className="flex items-end gap-2 h-32">
-              {[40,65,30,80,55,90,45,70,60,85,50,75].map((h, i) => (
-                <div key={i} className="flex-1 rounded-t-md transition-all hover:opacity-80" style={{
-                  height: `${h}%`,
-                  background: i === 7
-                    ? "var(--accent)"
-                    : "linear-gradient(to top, var(--accent-soft), transparent)",
-                  border: "1px solid var(--glass-border)",
-                }} />
-              ))}
-            </div>
-            <div className="mt-2 flex justify-between text-[10px]" style={{ color: "var(--text-tertiary)" }}>
-              {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m) => (
-                <span key={m}>{m}</span>
-              ))}
-            </div>
-          </section>
-
-          {/* Setup CTA — only shown when Supabase not connected */}
-          <div
-            className="rounded-[22px] border p-6 text-center"
-            style={{
-              background: "var(--glass-fill)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
-              borderColor: "var(--glass-border)",
-            }}
-          >
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Connect Supabase and run the schema to start managing live data.
+          {/* activity — honest empty state, not a fake chart */}
+          <section className="border border-[var(--glass-border)] p-10 text-center" style={{ borderRadius: "var(--r-xl)" }}>
+            <Activity size={22} className="mx-auto text-[var(--text-tertiary)]" />
+            <p className="mt-4 font-display text-2xl font-semibold text-[var(--text-primary)]">
+              No registration data yet.
+            </p>
+            <p className="mx-auto mt-2 max-w-sm text-[var(--text-secondary)]">
+              Connect Supabase and run the schema to see registrations,
+              attendance, and certificate trends here.
             </p>
             <Link
               href="/"
-              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold"
-              style={{ color: "var(--accent-strong)" }}
+              className="mt-5 inline-flex items-center gap-1.5 font-semibold text-[var(--accent)]"
             >
-              ← Back to public site
+              Back to public site <ArrowUpRight size={15} />
             </Link>
-          </div>
+          </section>
         </main>
       </div>
     </div>

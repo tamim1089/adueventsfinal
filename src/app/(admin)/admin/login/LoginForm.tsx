@@ -6,10 +6,10 @@ import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const inputCls =
-  "w-full rounded-[12px] border border-[var(--glass-border)] bg-[var(--bg-subtle)] px-4 py-3 text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none transition-colors focus:border-[var(--accent)] focus:bg-white";
+  "w-full rounded-[10px] border border-[var(--glass-border)] bg-[var(--bg-subtle)] px-4 py-3.5 text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none transition-colors focus:border-[var(--accent)] focus:bg-[var(--bg-elevated)]";
 
 const oauthBtn =
-  "flex w-full items-center justify-center gap-2.5 rounded-[12px] border border-[var(--glass-border)] bg-white px-4 py-3 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)]";
+  "flex w-full items-center justify-center gap-2.5 rounded-[10px] border border-[var(--glass-border)] bg-[var(--bg-elevated)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)]";
 
 export default function LoginForm() {
   const router = useRouter();
