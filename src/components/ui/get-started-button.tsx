@@ -30,7 +30,7 @@ export function GetStartedButton({
       )}
       style={primary ? { background: "var(--accent)" } : undefined}
     >
-      <span className="mr-9 transition-opacity duration-500 group-hover:opacity-0">{label}</span>
+      <span className="mr-12 transition-opacity duration-500 group-hover:opacity-0">{label}</span>
       <i
         className={cn(
           "absolute bottom-1 right-1 top-1 z-10 grid w-10 place-items-center rounded-full transition-all duration-500 group-hover:w-[calc(100%-0.5rem)] group-active:scale-95",

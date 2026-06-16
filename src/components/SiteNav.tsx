@@ -4,10 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Handshake, Users, Sparkles, type LucideIcon } from "lucide-react";
+import { CalendarDays, Handshake, Users, Sparkles, GraduationCap, type LucideIcon } from "lucide-react";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/events", label: "Events", icon: CalendarDays },
+  { href: "/empowered-ed-series", label: "Empowered Ed Series", icon: GraduationCap },
   { href: "/partnerships", label: "Partnerships & MoUs", icon: Handshake },
   { href: "/#organizers", label: "Organizers", icon: Users },
   { href: "/#features", label: "Features", icon: Sparkles },

@@ -32,10 +32,10 @@ const IconYouTube = (p: React.SVGProps<SVGSVGElement>) => (
 
 const socialLinks = [
   { Icon: Globe, label: "Website", href: "https://www.adu.ac.ae" },
-  { Icon: IconInstagram, label: "Instagram", href: "https://www.instagram.com/aduniversity" },
-  { Icon: IconX, label: "X", href: "https://twitter.com/ADU_UAE" },
-  { Icon: IconLinkedIn, label: "LinkedIn", href: "https://www.linkedin.com/school/abu-dhabi-university" },
-  { Icon: IconYouTube, label: "YouTube", href: "https://www.youtube.com/@AbuDhabiUniversity" },
+  { Icon: IconInstagram, label: "Instagram", href: "https://www.instagram.com/abudhabiuni" },
+  { Icon: IconX, label: "X", href: "https://x.com/abudhabiuni" },
+  { Icon: IconLinkedIn, label: "LinkedIn", href: "https://www.linkedin.com/school/abu-dhabi-university/" },
+  { Icon: IconYouTube, label: "YouTube", href: "https://www.youtube.com/@AbuDhabiUni" },
 ];
 
 const browseLinks = [
