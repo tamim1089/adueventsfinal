@@ -1,33 +1,75 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Logo from "@/components/Logo";
 import LoginForm from "./LoginForm";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-// Calm, premium sign-in. A centered card is the exception that earns a small
-// constrained box — on warm paper, no cosmic/shader background.
+// Premium split: a campus brand panel on the left, the form on warm paper on
+// the right. No boring centered box.
 export default function AdminLoginPage() {
   return (
-    <div className="flex min-h-[100svh] items-center justify-center bg-[var(--bg-base)] px-6 py-12">
-      <div
-        className="w-full max-w-md border border-[var(--glass-border)] bg-[var(--bg-elevated)] p-8 sm:p-10"
-        style={{ borderRadius: "var(--r-xl)" }}
-      >
-        <div className="flex items-center gap-3">
-          <Logo size={30} priority />
-          <div className="h-6 w-px bg-[var(--glass-border)]" />
-          <span className="text-sm font-semibold text-[var(--text-primary)]">ADU Events</span>
+    <div className="grid min-h-[100svh] lg:grid-cols-2">
+      {/* brand panel */}
+      <div className="relative hidden flex-col justify-between overflow-hidden p-12 lg:flex">
+        <Image
+          src="/media/unifront.jpg"
+          alt="Abu Dhabi University campus"
+          fill
+          priority
+          sizes="50vw"
+          className="object-cover"
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(155deg, rgba(16,12,10,0.55) 0%, rgba(16,12,10,0.50) 45%, rgba(16,12,10,0.88) 100%)" }}
+        />
+        {/* shapes */}
+        <span className="pointer-events-none absolute -left-16 bottom-24 h-72 w-72 rounded-full border border-white/10" aria-hidden="true" />
+
+        <div className="relative z-10">
+          <Image
+            src="/brand/adu-logo-transparent.png"
+            alt="Abu Dhabi University"
+            width={2500}
+            height={1878}
+            priority
+            className="h-16 w-auto object-contain object-left"
+          />
         </div>
 
-        <h1 className="mt-7 font-display text-3xl font-bold tracking-[-0.02em] text-[var(--text-primary)]">
-          Organizer sign in
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
-          Use your ADU Microsoft account, or an email invite. Access is scoped to
-          your department.
-        </p>
+        <div className="relative z-10">
+          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--accent)]">
+            Organizer workspace
+          </p>
+          <h2 className="mt-4 max-w-md font-display text-[clamp(2rem,3.5vw,3.25rem)] font-bold leading-[1.02] tracking-[-0.02em] text-white">
+            Publish, track, and document every ADU event.
+          </h2>
+          <p className="mt-4 max-w-sm leading-relaxed text-white/70">
+            One workspace for posters, attendance, certificates, surveys, and
+            reports — across every college and center.
+          </p>
+        </div>
+      </div>
 
-        <LoginForm />
+      {/* form panel */}
+      <div className="flex items-center justify-center bg-[var(--bg-base)] px-6 py-12 sm:px-12">
+        <div className="w-full max-w-sm">
+          <div className="flex items-center gap-3 lg:hidden">
+            <Logo size={28} priority />
+            <span className="text-sm font-semibold text-[var(--text-primary)]">ADU Events</span>
+          </div>
+
+          <h1 className="mt-8 font-display text-[clamp(2rem,5vw,2.75rem)] font-bold tracking-[-0.02em] text-[var(--text-primary)] lg:mt-0">
+            Organizer sign in
+          </h1>
+          <p className="mt-3 leading-relaxed text-[var(--text-secondary)]">
+            Use your ADU Microsoft account, or an email invite. Access is scoped
+            to your department.
+          </p>
+
+          <LoginForm />
+        </div>
       </div>
     </div>
   );

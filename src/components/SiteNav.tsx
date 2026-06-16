@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { CenterUnderline } from "@/components/ui/underline-animation";
 
 const LINKS = [
   { href: "/events", label: "Events" },
@@ -78,7 +79,7 @@ export default function SiteNav() {
               href={l.href}
               className={`text-[0.8125rem] transition-colors hover:text-[var(--accent)] ${subText}`}
             >
-              {l.label}
+              <CenterUnderline label={l.label} />
             </a>
           ))}
           <Link

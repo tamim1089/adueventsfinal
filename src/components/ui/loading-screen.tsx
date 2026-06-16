@@ -43,10 +43,10 @@ export function LoadingScreen() {
       <Image
         src="/brand/adu-logo.png"
         alt="Abu Dhabi University"
-        width={117}
-        height={88}
+        width={187}
+        height={140}
         priority
-        style={{ height: 88, width: "auto", objectFit: "contain" }}
+        style={{ height: 140, width: "auto", objectFit: "contain" }}
       />
       <div
         style={{
