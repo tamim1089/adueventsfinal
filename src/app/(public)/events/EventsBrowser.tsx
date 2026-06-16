@@ -3,9 +3,25 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
-import { Clock, MapPin, Users, ArrowRight } from "lucide-react";
+import { Clock, MapPin, Users, ArrowRight, Radio, CalendarDays } from "lucide-react";
 import { EVENTS_DATA, type EventItem } from "@/lib/events-data";
+import { ActionSearchBar, type Action } from "@/components/ui/action-search-bar";
+
+// Flat list across upcoming + past, for the quick-jump search.
+const SEARCH_ACTIONS: Action[] = [...EVENTS_DATA.upcoming, ...EVENTS_DATA.past].map((e) => ({
+  id: e.slug,
+  label: e.title,
+  description: e.organizer,
+  end: e.when,
+  href: `/events/${e.slug}`,
+  icon: e.when.startsWith("Today") ? (
+    <Radio className="h-4 w-4" />
+  ) : (
+    <CalendarDays className="h-4 w-4" />
+  ),
+}));
 
 const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
 const EASE = [0.2, 0.8, 0.2, 1] as const;
@@ -71,6 +87,7 @@ function EventCard({ event, index }: { event: EventItem; index: number }) {
 }
 
 export default function EventsBrowser() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("upcoming");
   const [filter, setFilter] = useState<string>("all");
 
@@ -132,6 +149,16 @@ export default function EventsBrowser() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* quick-jump search */}
+      <div className="relative z-30 mt-8 max-w-xl">
+        <ActionSearchBar
+          actions={SEARCH_ACTIONS}
+          label="Search events"
+          placeholder="Search events, organizers…"
+          onSelect={(a) => a.href && router.push(a.href)}
+        />
       </div>
 
       {/* rail + content */}
