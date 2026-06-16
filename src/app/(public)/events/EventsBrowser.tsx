@@ -282,6 +282,7 @@ export default function EventsBrowser() {
             </label>
             <GlassFilter />
           </RadioGroup>
+          </div>
         </div>
       </div>
 
