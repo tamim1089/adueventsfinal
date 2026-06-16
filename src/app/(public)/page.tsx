@@ -4,9 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import {
-  Clock,
-  MapPin,
-  Users,
   ArrowUpRight,
   ArrowRight,
   CalendarRange,
@@ -16,19 +13,12 @@ import {
   Images,
   FileBarChart,
 } from "lucide-react";
-import { EVENTS_DATA } from "@/lib/events-data";
 import { ORGANIZERS } from "@/lib/organizers";
+import HorizontalShowcase from "@/components/home/HorizontalShowcase";
+import TabletShowcase from "@/components/home/TabletShowcase";
 
-/* ----------------------------------------------------------------
-   Layout primitive: bands set their own width.
-   EDGE = fluid gutters that scale with the viewport and fill the
-   canvas — NOT a fixed centered max-w box with dead margins.
-   ---------------------------------------------------------------- */
+/* Fluid gutter — fills the canvas, never a fixed centered box. */
 const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
-
-const UPCOMING = EVENTS_DATA.upcoming;
-const FEATURED = UPCOMING[0];
-const LIVE = UPCOMING.filter((e) => e.when.startsWith("Today"));
 
 const FEATURES = [
   { icon: CalendarRange, title: "Browse by organizer", body: "Jump straight to any college, department, or center. Eleven organizers, one map." },
@@ -45,7 +35,6 @@ const STATS = [
   { value: "24", label: "Events this term", suffix: "+" },
 ];
 
-/* ---- motion primitives ---------------------------------------- */
 const EASE = [0.2, 0.8, 0.2, 1] as const;
 
 function FadeUp({
@@ -75,7 +64,7 @@ const lineReveal: Variants = {
   hidden: { y: "110%" },
   show: (i: number) => ({
     y: "0%",
-    transition: { duration: 0.7, ease: EASE, delay: 0.15 + i * 0.08 },
+    transition: { duration: 0.7, ease: EASE, delay: 0.2 + i * 0.09 },
   }),
 };
 
@@ -85,40 +74,47 @@ export default function LandingPage() {
   return (
     <>
       {/* ============================================================
-          BAND 1 — HERO (full-bleed). Video fills the viewport edge to
-          edge. Headline is left-weighted; the right column carries a
-          LIVE rail so the margin works; stats run full-width at the base.
+          BAND 1 — HERO. Campus photo fills the canvas; a big ADU logo
+          and title sit top-left. The first thing you land on is ADU.
           ============================================================ */}
-      <section className="relative flex min-h-[100svh] w-full flex-col justify-end overflow-hidden">
-        {/* background video + warm dark wash */}
-        <video
-          className="absolute inset-0 h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          poster="/media/hero-poster.jpg"
-        >
-          <source src="/media/hero.webm" type="video/webm" />
-          <source src="/media/hero.mp4" type="video/mp4" />
-        </video>
+      <section className="relative flex min-h-[100svh] w-full flex-col overflow-hidden">
+        <Image
+          src="/media/unifront.jpg"
+          alt="Abu Dhabi University campus"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(180deg, rgba(16,12,10,0.55) 0%, rgba(16,12,10,0.25) 38%, rgba(16,12,10,0.78) 100%)",
+              "linear-gradient(180deg, rgba(16,12,10,0.62) 0%, rgba(16,12,10,0.30) 42%, rgba(16,12,10,0.85) 100%)",
           }}
         />
 
-        {/* content fills the canvas — no centered max-w box */}
-        <div className={`relative z-10 grid grid-cols-1 items-end gap-10 pb-10 pt-28 lg:grid-cols-12 ${EDGE}`}>
-          {/* headline */}
-          <div className="lg:col-span-8">
-            <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-white/65">
-              Abu Dhabi University · live across every campus
-            </p>
+        <div className={`relative z-10 flex min-h-[100svh] flex-col ${EDGE}`}>
+          {/* big logo, top-left */}
+          <motion.div
+            className="pt-24 sm:pt-28"
+            initial={reduce ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE }}
+          >
+            <Image
+              src="/brand/adu-logo-transparent.png"
+              alt="Abu Dhabi University"
+              width={2500}
+              height={1878}
+              priority
+              className="h-28 w-auto object-contain object-left sm:h-40 lg:h-48"
+            />
+          </motion.div>
 
-            <h1 className="mt-5 font-display font-bold leading-[0.95] tracking-[-0.03em] text-white text-[clamp(2.75rem,8vw,7rem)]">
+          {/* title + actions, bottom-left */}
+          <div className="mt-auto pb-10">
+            <h1 className="font-display font-bold leading-[0.92] tracking-[-0.035em] text-white text-[clamp(3rem,9vw,8.5rem)]">
               <span className="block overflow-hidden">
                 <motion.span
                   className="block"
@@ -147,15 +143,15 @@ export default function LandingPage() {
             <motion.div
               initial={reduce ? false : { opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: EASE, delay: 0.5 }}
+              transition={{ duration: 0.6, ease: EASE, delay: 0.6 }}
             >
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/80">
-                What&apos;s on across ADU — every college, department, and
-                center, the moment it goes live.
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/85">
+                What&apos;s on across ADU — every college, department, and center,
+                the moment it goes live.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
-                  href="#live"
+                  href="#whats-on"
                   className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-[var(--accent-on)] transition-transform active:scale-[0.98]"
                   style={{ background: "var(--accent)" }}
                 >
@@ -171,207 +167,47 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* LIVE rail — fills the right margin instead of leaving it dead */}
-          <motion.aside
-            className="lg:col-span-4 lg:pb-2"
-            initial={reduce ? false : { opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: EASE, delay: 0.6 }}
-          >
-            <div className="flex items-center gap-2 border-b border-white/15 pb-3">
-              <span className="relative flex h-2 w-2">
-                <span
-                  className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${reduce ? "" : "animate-ping"}`}
-                  style={{ background: "var(--accent)" }}
-                />
-                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: "var(--accent)" }} />
-              </span>
-              <span className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-white/70">
-                Live now
-              </span>
-            </div>
-            <ul className="divide-y divide-white/10">
-              {LIVE.map((e) => (
-                <li key={e.slug}>
-                  <Link
-                    href={`/events/${e.slug}`}
-                    className="group flex items-baseline justify-between gap-4 py-3.5"
-                  >
-                    <span>
-                      <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-white/55">
-                        {e.organizer}
-                      </span>
-                      <span className="mt-1 block font-display text-lg leading-tight text-white transition-colors group-hover:text-[var(--accent)]">
-                        {e.title}
-                      </span>
-                    </span>
-                    <span className="shrink-0 font-mono text-[0.6875rem] tabular-nums text-white/65">
-                      {e.when.replace("Today · ", "")}
-                    </span>
-                  </Link>
-                </li>
+          {/* stats — full-width band along the hero base */}
+          <div className="relative z-10 border-t border-white/15 py-6">
+            <dl className="flex flex-wrap items-end gap-x-14 gap-y-4">
+              {STATS.map((s) => (
+                <div key={s.label}>
+                  <dd className="font-display text-4xl font-bold tabular-nums text-white">
+                    {s.value}
+                    {s.suffix && <span className="text-[var(--accent)]">{s.suffix}</span>}
+                  </dd>
+                  <dt className="mt-1 font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-white/60">
+                    {s.label}
+                  </dt>
+                </div>
               ))}
-            </ul>
-          </motion.aside>
-        </div>
-
-        {/* stats — full-width band along the hero base */}
-        <div className={`relative z-10 border-t border-white/15 py-6 ${EDGE}`}>
-          <dl className="flex flex-wrap items-end gap-x-14 gap-y-4">
-            {STATS.map((s) => (
-              <div key={s.label}>
-                <dd className="font-display text-4xl font-bold tabular-nums text-white">
-                  {s.value}
-                  {s.suffix && <span className="text-[var(--accent)]">{s.suffix}</span>}
-                </dd>
-                <dt className="mt-1 font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-white/55">
-                  {s.label}
-                </dt>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      {/* ============================================================
-          BAND 2 — LIVE STRIP (full-bleed ticker). The row runs past the
-          right edge and scrolls, so live sessions read as a feed, not
-          three lonely cards in a centered box.
-          ============================================================ */}
-      <section id="live" className="border-b border-[var(--glass-border)] bg-[var(--bg-base)] py-20 sm:py-28">
-        <FadeUp className={EDGE}>
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-            Happening now
-          </p>
-          <h2 className="mt-3 max-w-3xl font-display text-[clamp(2rem,4.5vw,3.5rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--text-primary)]">
-            Live events, the moment they go live.
-          </h2>
-        </FadeUp>
-
-        <div className="mt-12 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 pl-[clamp(1.25rem,4vw,5rem)] pr-[clamp(1.25rem,4vw,5rem)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {UPCOMING.map((e, i) => {
-            const live = e.when.startsWith("Today");
-            return (
-              <FadeUp
-                key={e.slug}
-                delay={i * 0.06}
-                className="w-[clamp(280px,80vw,380px)] shrink-0 snap-start"
-              >
-                <Link
-                  href={`/events/${e.slug}`}
-                  className="faux-glass card-hover group flex h-full flex-col overflow-hidden"
-                >
-                  <div className="relative aspect-[16/10] w-full overflow-hidden">
-                    <Image
-                      src={e.image}
-                      alt=""
-                      fill
-                      sizes="380px"
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    />
-                    {live && (
-                      <span
-                        className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white"
-                        style={{ background: "var(--accent)" }}
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-white" /> Live
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-1 flex-col p-5">
-                    <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                      {e.organizer}
-                    </span>
-                    <h3 className="mt-2 font-display text-2xl font-semibold leading-tight text-[var(--text-primary)]">
-                      {e.title}
-                    </h3>
-                    <div className="mt-auto flex items-center gap-4 pt-5 font-mono text-[0.6875rem] tabular-nums text-[var(--text-secondary)]">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock size={13} className="text-[var(--text-tertiary)]" />
-                        {e.when}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin size={13} className="text-[var(--text-tertiary)]" />
-                        {e.venue}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              </FadeUp>
-            );
-          })}
-
-          {/* trailing "all events" affordance, inline with the feed */}
-          <FadeUp delay={UPCOMING.length * 0.06} className="flex w-[260px] shrink-0 snap-start items-center">
-            <Link
-              href="/events"
-              className="group flex h-full w-full flex-col justify-center gap-3 border border-dashed border-[var(--glass-border)] px-6 text-[var(--text-secondary)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
-              style={{ borderRadius: "var(--r-xl)" }}
-            >
-              <ArrowUpRight size={24} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-              <span className="font-display text-xl font-semibold leading-tight">
-                See all events
-              </span>
-            </Link>
-          </FadeUp>
-        </div>
-      </section>
-
-      {/* ============================================================
-          BAND 3 — FEATURED (full-bleed split). One flagship event,
-          image edge-to-edge on one side, editorial copy on the other.
-          ============================================================ */}
-      <section className="grid grid-cols-1 border-b border-[var(--glass-border)] lg:grid-cols-2">
-        <div className="relative min-h-[320px] lg:min-h-[560px]">
-          <Image
-            src={FEATURED.image}
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
-          />
-        </div>
-        <FadeUp className="flex flex-col justify-center px-[clamp(1.25rem,4vw,5rem)] py-16 lg:py-20">
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--accent)]">
-            Featured · {FEATURED.organizer}
-          </p>
-          <h2 className="mt-4 font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">
-            {FEATURED.title}
-          </h2>
-          <p className="mt-5 max-w-md text-lg leading-relaxed text-[var(--text-secondary)]">
-            {FEATURED.overview}
-          </p>
-          <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-2 border-t border-[var(--glass-border)] pt-6 font-mono text-[0.75rem] tabular-nums text-[var(--text-secondary)]">
-            <span className="inline-flex items-center gap-2">
-              <Clock size={14} className="text-[var(--text-tertiary)]" /> {FEATURED.when}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <MapPin size={14} className="text-[var(--text-tertiary)]" /> {FEATURED.venue}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <Users size={14} className="text-[var(--text-tertiary)]" /> {FEATURED.attending} attending
-            </span>
+            </dl>
           </div>
-          <Link
-            href={`/events/${FEATURED.slug}`}
-            className="mt-8 inline-flex w-fit items-center gap-2 font-semibold text-[var(--accent)] transition-transform hover:translate-x-0.5"
-          >
-            View full details <ArrowRight size={17} />
-          </Link>
-        </FadeUp>
+        </div>
       </section>
 
       {/* ============================================================
-          BAND 4 — ORGANIZERS INDEX. Reading width is constrained, but
-          the left margin WORKS: it holds the section number + sticky
-          heading. Organizers are a dense editorial index, not pillows.
+          BAND 2 — HORIZONTAL SHOWCASE (the signature slide). Scrolling
+          down drives the day's events sideways past editorial shapes.
+          ============================================================ */}
+      <div id="whats-on">
+        <HorizontalShowcase />
+      </div>
+
+      {/* ============================================================
+          BAND 3 — TABLET SHOWCASE (scroll-revealed "screen").
+          ============================================================ */}
+      <TabletShowcase />
+
+      {/* ============================================================
+          BAND 4 — ORGANIZERS INDEX.
           ============================================================ */}
       <section id="organizers" className="border-b border-[var(--glass-border)] bg-[var(--bg-subtle)]">
         <div className={`grid grid-cols-1 gap-12 py-20 sm:py-28 lg:grid-cols-12 ${EDGE}`}>
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-28">
               <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-                01 — Organizers
+                02 — Organizers
               </p>
               <h2 className="mt-3 font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">
                 Eleven ways in.
@@ -413,13 +249,12 @@ export default function LandingPage() {
       </section>
 
       {/* ============================================================
-          BAND 5 — FEATURES. Full-canvas bordered grid (cells share
-          hairlines, like a table) — not three floating pillow cards.
+          BAND 5 — FEATURES (full-canvas bordered grid).
           ============================================================ */}
       <section id="features" className="bg-[var(--bg-base)]">
         <FadeUp className={`pt-20 sm:pt-28 ${EDGE}`}>
           <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-            02 — For organizers
+            03 — For organizers
           </p>
           <h2 className="mt-3 max-w-2xl font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">
             From the poster to the report — handled.
@@ -452,32 +287,7 @@ export default function LandingPage() {
       </section>
 
       {/* ============================================================
-          BAND 6 — CAMPUS (full-bleed photo with overlaid label).
-          ============================================================ */}
-      <section className="relative h-[clamp(360px,55vh,640px)] w-full overflow-hidden border-b border-[var(--glass-border)]">
-        <Image
-          src="/media/unifront.jpg"
-          alt="Abu Dhabi University campus"
-          fill
-          sizes="100vw"
-          className="object-cover"
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(180deg, rgba(16,12,10,0.15) 0%, rgba(16,12,10,0.65) 100%)" }}
-        />
-        <div className={`absolute inset-x-0 bottom-0 pb-12 ${EDGE}`}>
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-white/65">
-            Life at ADU
-          </p>
-          <h2 className="mt-3 max-w-2xl font-display text-[clamp(1.75rem,3.5vw,3rem)] font-bold leading-[1.05] tracking-[-0.02em] text-white">
-            One campus, always in motion.
-          </h2>
-        </div>
-      </section>
-
-      {/* ============================================================
-          BAND 7 — CTA (full-bleed red band, not a centered card).
+          BAND 6 — CTA (full-bleed red band).
           ============================================================ */}
       <section
         className={`py-24 sm:py-32 ${EDGE}`}
