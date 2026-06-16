@@ -100,7 +100,7 @@ export default function LandingPage() {
         <ContainerScroll
           titleComponent={
             <div className="mb-4">
-              <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
+              <p className="eyebrow">
                 For everyone at ADU
               </p>
               <h2 className="mt-3 font-display text-4xl font-bold text-[var(--text-primary)] sm:text-6xl">
@@ -118,7 +118,7 @@ export default function LandingPage() {
       {/* ============ EVENTS TEASER ============ */}
       <section id="events" className="relative mx-auto max-w-6xl px-6 py-24">
         <Reveal>
-          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
+          <p className="eyebrow">
             Happening now
           </p>
           <h2 className="mt-3 max-w-2xl font-display text-4xl font-bold leading-tight text-[var(--text-primary)] sm:text-5xl">
@@ -176,7 +176,7 @@ export default function LandingPage() {
       <section id="organizers" className="relative overflow-hidden bg-[var(--bg-subtle)] py-24">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal>
-            <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
+            <p className="eyebrow">
               Organizers
             </p>
             <h2 className="mt-3 font-display text-4xl font-bold text-[var(--text-primary)] sm:text-5xl">
@@ -212,7 +212,7 @@ export default function LandingPage() {
       {/* ============ FEATURES ============ */}
       <section id="features" className="mx-auto max-w-6xl px-6 py-24">
         <Reveal>
-          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
+          <p className="eyebrow">
             Built for organizers
           </p>
           <h2 className="mt-3 max-w-2xl font-display text-4xl font-bold leading-tight text-[var(--text-primary)] sm:text-5xl">
@@ -243,7 +243,7 @@ export default function LandingPage() {
       {/* ============ CAMPUS VIDEO ============ */}
       <section className="mx-auto max-w-5xl px-6 pb-24">
         <Reveal>
-          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
+          <p className="eyebrow">
             Life at ADU
           </p>
           <h2 className="mt-3 mb-8 max-w-2xl font-display text-4xl font-bold leading-tight text-[var(--text-primary)] sm:text-5xl">

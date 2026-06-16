@@ -6,65 +6,66 @@
    Glass = light frosted surfaces. Shader bands are dark on purpose.
    ============================================================ */
 :root {
-  /* canvas */
-  --bg-base: #f7f8fb;
-  --bg-elevated: #ffffff;
-  --bg-subtle: #eef1f6;
+  /* canvas — warm off-white foundation (luxury reads warm, never cool gray) */
+  --bg-base: #faf8f4;
+  --bg-elevated: #fffdf9;
+  --bg-subtle: #f2ede4;
 
-  /* brand (sampled from the ADU logo) */
-  --accent: #e11d2e;        /* ADU red — CTAs, active states, key numbers */
+  /* brand (sampled from the ADU logo) — red is rationed to "jewelry": CTAs only */
+  --accent: #e11d2e;        /* ADU red — CTAs & one key moment per screen */
   --accent-strong: #c8101f;
-  --accent-soft: #fdeced;
+  --accent-soft: #fce9ea;
   --accent-on: #ffffff;
   --brand-navy: #1b2a6b;
 
-  /* text — read-critical content is always full strength */
-  --text-primary: #0c1020;
-  --text-secondary: #4a5160;
-  --text-tertiary: #8a92a3;
+  /* text — warm near-black ramp (warm grays, not cool blue-grays) */
+  --text-primary: #1a1714;
+  --text-secondary: #585149;
+  --text-tertiary: #948c81;
 
   /* state */
   --success: #128a4f;
   --warning: #b3760a;
   --danger: #d12530;
 
-  /* glass (light) */
-  --glass-fill: rgba(255, 255, 255, 0.55);
-  --glass-fill-strong: rgba(255, 255, 255, 0.75);
+  /* glass (light) — warm hairline carries structure instead of heavy shadow */
+  --glass-fill: rgba(255, 253, 249, 0.55);
+  --glass-fill-strong: rgba(255, 253, 249, 0.78);
   --glass-rim: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(15, 20, 40, 0.08);
-  --glass-shadow: 0 8px 28px rgba(20, 28, 55, 0.10);
-  --glass-shadow-lg: 0 24px 60px rgba(20, 28, 55, 0.16);
+  --glass-border: rgba(40, 33, 25, 0.12);
+  --glass-shadow: 0 6px 24px rgba(40, 33, 25, 0.07);
+  --glass-shadow-lg: 0 20px 50px rgba(40, 33, 25, 0.10);
 
-  /* geometry */
-  --r-sm: 8px;
-  --r-md: 16px;
-  --r-lg: 20px;
-  --r-xl: 28px;
+  /* geometry — committed: crisp cards (no mid-market 16-28px pillow), pills stay pills */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 10px;
+  --r-xl: 12px;
 
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* deceleration ease — precise & controlled, not bouncy/playful */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
 }
 
 /* shadcn-compatible tokens (ADU red / black / white) for ui/* components */
 :root {
-  --background: #ffffff;
-  --foreground: #0c0d12;
-  --card: #ffffff;
-  --card-foreground: #0c0d12;
-  --popover: #ffffff;
-  --popover-foreground: #0c0d12;
+  --background: #fffdf9;
+  --foreground: #1a1714;
+  --card: #fffdf9;
+  --card-foreground: #1a1714;
+  --popover: #fffdf9;
+  --popover-foreground: #1a1714;
   --primary: #e11d2e;            /* ADU red */
   --primary-foreground: #ffffff;
-  --secondary: #f1f3f7;
-  --secondary-foreground: #0c0d12;
-  --muted: #eef1f6;
-  --muted-foreground: #6b7280;
-  --shadcn-accent: #f1f3f7;      /* shadcn "accent" = neutral hover (NOT the brand red) */
-  --shadcn-accent-foreground: #0c0d12;
+  --secondary: #f2ede4;
+  --secondary-foreground: #1a1714;
+  --muted: #f2ede4;
+  --muted-foreground: #6f675d;
+  --shadcn-accent: #f2ede4;      /* shadcn "accent" = neutral hover (NOT the brand red) */
+  --shadcn-accent-foreground: #1a1714;
   --destructive: #d12530;
   --destructive-foreground: #ffffff;
-  --border: #e5e8ee;
-  --input: #e5e8ee;
+  --border: #e7e0d4;
+  --input: #e7e0d4;
   --ring: #e11d2e;
 }
 
@@ -77,6 +78,7 @@
   --color-text-tertiary: var(--text-tertiary);
   --font-display: var(--font-display);
   --font-sans: var(--font-inter);
+  --font-mono: var(--font-mono);
   --font-signika: var(--font-display);
   --font-dm-sans: var(--font-inter);
   --radius-sm: var(--r-sm);
@@ -120,6 +122,29 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* ---- Display typography discipline -----------------------------
+   Serif display gets tight leading + negative tracking (the editorial
+   "machined" look). Only the big tiers (h1/h2) — body & small headings
+   keep normal metrics so they stay readable. */
+:where(h1, h2) {
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+/* ---- Editorial eyebrow / metadata ------------------------------
+   Mono uppercase with open tracking — the "curated dossier" register.
+   Neutral ink by default so the red accent stays rationed to CTAs. */
+.eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.6875rem;       /* 11px */
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+.eyebrow--accent { color: var(--accent); }
+
 /* ---- Glass surface primitive (light) --------------------------
    Backdrop blur of what's behind + soft white tint + hairline rim
    + soft shadow. Chrome only (nav, sheets). Cards use .faux-glass. */
@@ -150,38 +175,25 @@ body {
    GPU-cheap for long lists; doubles as Reduce-Transparency fallback. */
 .faux-glass {
   position: relative;
-  background:
-    linear-gradient(180deg, #ffffff 0%, #fdfdfe 100%);
+  background: var(--bg-elevated);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-xl);
-  box-shadow:
-    0 1px 2px rgba(20, 28, 55, 0.04),
-    0 6px 16px rgba(20, 28, 55, 0.05),
-    0 18px 40px rgba(20, 28, 55, 0.05);
-}
-/* faint top highlight so cards read as raised, not flat */
-.faux-glass::after {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 40%;
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent);
-  pointer-events: none;
+  /* hairline-led: the border carries the edge, shadow is a whisper */
+  box-shadow: 0 1px 2px rgba(40, 33, 25, 0.05);
 }
 
-/* interactive cards: smooth lift + accent-tinted edge on hover */
+/* interactive cards: subtle, precise lift — the edge darkens, no red glow.
+   Red stays rationed to CTAs; cards earn depth from the hairline + shadow. */
 .card-hover {
-  transition: transform 0.28s var(--ease), box-shadow 0.28s var(--ease),
-    border-color 0.28s var(--ease);
+  transition: transform 0.24s var(--ease), box-shadow 0.24s var(--ease),
+    border-color 0.24s var(--ease);
 }
 .card-hover:hover {
-  transform: translateY(-4px);
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--glass-border));
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--text-primary) 22%, var(--glass-border));
   box-shadow:
-    0 2px 4px rgba(20, 28, 55, 0.05),
-    0 12px 28px rgba(20, 28, 55, 0.09),
-    0 28px 60px rgba(225, 29, 46, 0.08);
+    0 2px 6px rgba(40, 33, 25, 0.06),
+    0 14px 36px rgba(40, 33, 25, 0.10);
 }
 
 /* ambient drifting light blobs (atmosphere only) */
