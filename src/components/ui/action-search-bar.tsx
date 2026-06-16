@@ -130,7 +130,7 @@ export function ActionSearchBar({
                       </span>
                       <span className="truncate text-sm font-medium text-[var(--text-primary)]">{a.label}</span>
                       {a.description && (
-                        <span className="hidden truncate font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--text-tertiary)] sm:inline">
+                        <span className="hidden truncate text-xs font-medium text-[var(--text-tertiary)] sm:inline">
                           {a.description}
                         </span>
                       )}

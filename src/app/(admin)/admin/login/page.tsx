@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="relative z-10">
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--accent)]">
+          <p className="text-sm font-medium text-[var(--accent)]">
             Organizer workspace
           </p>
           <h2 className="mt-4 max-w-md font-display text-[clamp(2rem,3.5vw,3.25rem)] font-bold leading-[1.02] tracking-[-0.02em] text-white">

@@ -19,7 +19,7 @@ export default function PartnershipsPage() {
     <>
       {/* intro band */}
       <section className={`border-b border-[var(--glass-border)] bg-[var(--bg-base)] pb-16 pt-28 sm:pb-20 ${EDGE}`}>
-        <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+        <p className="text-sm font-medium text-[var(--text-tertiary)]">
           Abu Dhabi University · Al Ain Campus
         </p>
         <h1 className="mt-4 max-w-4xl font-display text-[clamp(2.5rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[var(--text-primary)]">
@@ -30,7 +30,7 @@ export default function PartnershipsPage() {
           with ADU. Open any partner to copy their contacts or reach out
           directly.
         </p>
-        <p className="mt-6 font-mono text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+        <p className="mt-6 text-sm font-medium text-[var(--text-tertiary)]">
           {total} partners on file
         </p>
       </section>

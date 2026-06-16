@@ -26,7 +26,7 @@ function EventPanel({ e }: { e: (typeof UPCOMING)[number] }) {
         )}
       </div>
       <div className="flex flex-1 flex-col p-5">
-        <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{e.organizer}</span>
+        <span className="text-xs font-medium text-[var(--text-tertiary)]">{e.organizer}</span>
         <h3 className="mt-2 font-display text-2xl font-semibold leading-tight text-[var(--text-primary)]">{e.title}</h3>
         <div className="mt-auto flex items-center gap-4 pt-5 font-mono text-[0.6875rem] tabular-nums text-[var(--text-secondary)]">
           <span className="inline-flex items-center gap-1.5"><Clock size={13} className="text-[var(--text-tertiary)]" /> {e.when}</span>
@@ -68,7 +68,7 @@ export default function HorizontalShowcase() {
     return (
       <section className="border-b border-[var(--glass-border)] bg-[var(--bg-base)] py-20 sm:py-28">
         <div className="pl-[clamp(1.25rem,4vw,5rem)] pr-[clamp(1.25rem,4vw,5rem)]">
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+          <p className="text-sm font-medium text-[var(--text-tertiary)]">
             Fig. 01 — What&apos;s on
           </p>
           <h2 className="mt-3 max-w-3xl font-display text-[clamp(2rem,5vw,4rem)] font-bold leading-[1.0] tracking-[-0.02em] text-[var(--text-primary)]">
@@ -93,14 +93,14 @@ export default function HorizontalShowcase() {
       <div className="sticky top-0 flex h-screen items-center overflow-hidden border-b border-[var(--glass-border)]">
         {/* editorial shapes, fixed within the viewport while panels slide */}
         <span className="pointer-events-none absolute -left-20 top-1/3 h-72 w-72 rounded-full border border-[var(--glass-border)]" aria-hidden="true" />
-        <span className="pointer-events-none absolute right-10 top-16 font-mono text-[0.625rem] uppercase tracking-[0.3em] text-[var(--text-tertiary)]" aria-hidden="true">
+        <span className="pointer-events-none absolute right-10 top-16 text-xs font-medium text-[var(--text-tertiary)]" aria-hidden="true">
           Scroll →
         </span>
 
         <motion.div ref={trackRef} style={{ x }} className={`flex items-stretch gap-6 ${EDGE_PX}`}>
           {/* intro panel */}
           <div className="relative flex w-[86vw] shrink-0 flex-col justify-center sm:w-[44vw]">
-            <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--accent)]">
+            <p className="text-sm font-medium text-[var(--accent)]">
               Fig. 01 — What&apos;s on
             </p>
             <h2 className="mt-4 font-display text-[clamp(2.5rem,7vw,6rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[var(--text-primary)]">
@@ -115,7 +115,7 @@ export default function HorizontalShowcase() {
             <div className="mt-8 flex items-center gap-3">
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--accent)" }} />
               <span className="h-px w-24 bg-[var(--glass-border)]" />
-              <span className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+              <span className="text-xs font-medium text-[var(--text-tertiary)]">
                 {String(UPCOMING.length).padStart(2, "0")} events
               </span>
             </div>
@@ -140,7 +140,7 @@ export default function HorizontalShowcase() {
               <span className="font-display text-3xl font-semibold leading-tight text-[var(--text-primary)]">
                 See every<br />event
               </span>
-              <span className="inline-flex items-center gap-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)]">
                 Browse all <ArrowRight size={13} />
               </span>
             </Link>

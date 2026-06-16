@@ -39,7 +39,7 @@ function DashboardMock() {
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-hidden p-5 sm:p-7">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+            <p className="text-xs font-medium text-[var(--text-tertiary)]">
               Innovation Center
             </p>
             <h3 className="mt-1 font-display text-xl font-bold tracking-[-0.01em] text-[var(--text-primary)] sm:text-2xl">
@@ -64,7 +64,7 @@ function DashboardMock() {
                 <span className="font-mono text-lg font-semibold tabular-nums leading-none text-[var(--text-primary)] sm:text-2xl">
                   {k.value}
                 </span>
-                <span className="font-mono text-[0.5rem] uppercase tracking-[0.14em] text-[var(--text-tertiary)] sm:text-[0.625rem]">
+                <span className="text-xs font-medium text-[var(--text-tertiary)] sm:text-[0.625rem]">
                   {k.label}
                 </span>
               </div>
@@ -84,7 +84,7 @@ function DashboardMock() {
                 <p className="truncate text-[0.8125rem] font-semibold text-[var(--text-primary)] sm:text-sm">
                   {r.title}
                 </p>
-                <p className="font-mono text-[0.5625rem] uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
+                <p className="text-xs font-medium text-[var(--text-tertiary)]">
                   {r.org}
                 </p>
               </div>
@@ -120,7 +120,7 @@ export default function TabletShowcase() {
       <span className="pointer-events-none absolute right-[12%] top-40 hidden h-2.5 w-2.5 rounded-full lg:block" style={{ background: "var(--accent)" }} aria-hidden="true" />
 
       <div className={`relative ${EDGE}`}>
-        <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--accent)]">
+        <p className="text-sm font-medium text-[var(--accent)]">
           For everyone at ADU
         </p>
         <h2 className="mt-3 max-w-3xl font-display text-[clamp(2rem,5vw,4rem)] font-bold leading-[1.0] tracking-[-0.02em] text-[var(--text-primary)]">

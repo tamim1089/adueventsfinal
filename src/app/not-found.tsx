@@ -8,7 +8,7 @@ const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
 export default function NotFound() {
   return (
     <main className={`flex min-h-screen flex-col justify-center bg-[var(--bg-base)] py-32 ${EDGE}`}>
-      <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--accent)]">
+      <p className="text-sm font-medium text-[var(--accent)]">
         Error 404
       </p>
       <h1 className="mt-5 font-display text-[clamp(3rem,12vw,9rem)] font-bold leading-[0.9] tracking-[-0.03em] text-[var(--text-primary)]">

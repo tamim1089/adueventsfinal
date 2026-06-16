@@ -16,6 +16,7 @@ import {
 import { ORGANIZERS } from "@/lib/organizers";
 import HorizontalShowcase from "@/components/home/HorizontalShowcase";
 import TabletShowcase from "@/components/home/TabletShowcase";
+import { GetStartedButton } from "@/components/ui/get-started-button";
 
 /* Fluid gutter — fills the canvas, never a fixed centered box. */
 const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
@@ -150,19 +151,8 @@ export default function LandingPage() {
                 the moment it goes live.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a
-                  href="#whats-on"
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-[var(--accent-on)] transition-transform active:scale-[0.98]"
-                  style={{ background: "var(--accent)" }}
-                >
-                  Explore events <ArrowRight size={17} />
-                </a>
-                <Link
-                  href="/admin"
-                  className="inline-flex items-center justify-center rounded-full border border-white/30 px-7 py-3.5 text-base font-semibold text-white transition-colors hover:bg-white/10"
-                >
-                  Organizer sign in
-                </Link>
+                <GetStartedButton href="#whats-on" label="Explore events" />
+                <GetStartedButton href="/admin" label="Organizer sign in" variant="ghost" />
               </div>
             </motion.div>
           </div>
@@ -176,7 +166,7 @@ export default function LandingPage() {
                     {s.value}
                     {s.suffix && <span className="text-[var(--accent)]">{s.suffix}</span>}
                   </dd>
-                  <dt className="mt-1 font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-white/60">
+                  <dt className="mt-1 text-sm font-medium text-white/60">
                     {s.label}
                   </dt>
                 </div>
@@ -206,7 +196,7 @@ export default function LandingPage() {
         <div className={`grid grid-cols-1 gap-12 py-20 sm:py-28 lg:grid-cols-12 ${EDGE}`}>
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-28">
-              <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+              <p className="text-sm font-medium text-[var(--text-tertiary)]">
                 02 — Organizers
               </p>
               <h2 className="mt-3 font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">
@@ -233,7 +223,7 @@ export default function LandingPage() {
                     {o.name}
                   </span>
                   <span className="flex items-center gap-3">
-                    <span className="hidden font-mono text-[0.625rem] uppercase tracking-[0.18em] text-[var(--text-tertiary)] sm:inline">
+                    <span className="hidden text-xs font-medium text-[var(--text-tertiary)] sm:inline">
                       {o.kind}
                     </span>
                     <ArrowUpRight
@@ -253,7 +243,7 @@ export default function LandingPage() {
           ============================================================ */}
       <section id="features" className="bg-[var(--bg-base)]">
         <FadeUp className={`pt-20 sm:pt-28 ${EDGE}`}>
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+          <p className="text-sm font-medium text-[var(--text-tertiary)]">
             03 — For organizers
           </p>
           <h2 className="mt-3 max-w-2xl font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">

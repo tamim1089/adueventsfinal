@@ -81,7 +81,7 @@ function FadeUp({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 function Chip({ children, accent = false }: { children: React.ReactNode; accent?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[0.5625rem] uppercase tracking-[0.14em] ${
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
         accent ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--glass-border)] text-[var(--text-tertiary)]"
       }`}
     >
@@ -125,7 +125,7 @@ function PartnerCard({ partner }: { partner: Partner }) {
             <span dir="auto" className="block truncate font-display text-base font-semibold leading-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent)]">
               {partner.name}
             </span>
-            <span className="mt-0.5 block truncate font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+            <span className="mt-0.5 block truncate text-xs font-medium text-[var(--text-tertiary)]">
               {partner.subtype || CATEGORY_LABEL[partner.category]} · {partner.contacts.length}{" "}
               {partner.contacts.length === 1 ? "contact" : "contacts"}
             </span>
@@ -157,7 +157,7 @@ function PartnerCard({ partner }: { partner: Partner }) {
                   </p>
                 )}
                 {c.position && (
-                  <p dir="auto" className="mt-0.5 font-mono text-[0.5625rem] uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                  <p dir="auto" className="mt-0.5 text-xs font-medium text-[var(--text-tertiary)]">
                     {c.position}
                   </p>
                 )}
@@ -241,7 +241,7 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
             <div className={`grid grid-cols-1 gap-10 py-20 sm:py-24 lg:grid-cols-12 ${EDGE}`}>
               <div className="lg:col-span-4">
                 <div className="lg:sticky lg:top-28">
-                  <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+                  <p className="text-sm font-medium text-[var(--text-tertiary)]">
                     {g.n} — {g.title}
                   </p>
                   <h2 className="mt-3 flex items-center gap-3 font-display text-[clamp(1.75rem,3.5vw,2.75rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">

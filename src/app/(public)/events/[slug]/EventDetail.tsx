@@ -66,7 +66,7 @@ export default function EventDetail({
         </Link>
 
         <div className={`relative z-10 pb-12 ${EDGE}`}>
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--accent)]">
+          <p className="text-sm font-medium text-[var(--accent)]">
             {event.organizer}
           </p>
           <motion.h1
@@ -91,7 +91,7 @@ export default function EventDetail({
                   <div key={label} className="flex items-center gap-4 py-4">
                     <Icon size={16} className="shrink-0 text-[var(--text-tertiary)]" />
                     <div>
-                      <dt className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                      <dt className="text-xs font-medium text-[var(--text-tertiary)]">
                         {label}
                       </dt>
                       <dd className="mt-1 font-mono text-sm tabular-nums text-[var(--text-primary)]">
@@ -109,7 +109,7 @@ export default function EventDetail({
           {/* reading column */}
           <FadeUp delay={0.08} className="lg:col-span-8">
             <div className="max-w-[65ch]">
-              <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+              <p className="text-sm font-medium text-[var(--text-tertiary)]">
                 About this event
               </p>
               <p className="mt-5 text-xl leading-relaxed text-[var(--text-primary)]">
@@ -128,7 +128,7 @@ export default function EventDetail({
       {related.length > 0 && (
         <section className="bg-[var(--bg-base)] py-20 sm:py-28">
           <FadeUp className={EDGE}>
-            <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+            <p className="text-sm font-medium text-[var(--text-tertiary)]">
               More from {event.organizer}
             </p>
             <h2 className="mt-3 font-display text-[clamp(1.75rem,4vw,3rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--text-primary)]">
@@ -153,7 +153,7 @@ export default function EventDetail({
                     />
                   </div>
                   <div className="flex flex-1 flex-col p-5">
-                    <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                    <span className="text-xs font-medium text-[var(--text-tertiary)]">
                       {e.organizer}
                     </span>
                     <h3 className="mt-2 font-display text-xl font-semibold leading-tight text-[var(--text-primary)]">

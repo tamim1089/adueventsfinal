@@ -54,7 +54,7 @@ export default function AdminDashboard() {
       {/* ── Top bar ── */}
       <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-[var(--glass-border)] bg-[var(--bg-base)] px-6 py-3">
         <div className="flex items-center gap-3">
-          <Link href="/" className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-[var(--accent)]">
+          <Link href="/" className="text-sm font-medium text-[var(--accent)]">
             ← ADU Events
           </Link>
           <span className="text-[var(--glass-border)]">|</span>
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       <div className="flex">
         {/* ── Sidebar ── */}
         <aside className="sticky top-[57px] hidden h-[calc(100vh-57px)] w-64 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[var(--glass-border)] p-4 lg:flex">
-          <p className="mb-3 px-3 font-mono text-[0.625rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+          <p className="mb-3 px-3 text-xs font-medium text-[var(--text-tertiary)]">
             Navigation
           </p>
           {NAV_ITEMS.map((n) => {
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
 
           <div className="mt-auto border-t border-[var(--glass-border)] pt-4">
             <div className="border border-[var(--glass-border)] p-3" style={{ borderRadius: "var(--r-xl)" }}>
-              <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+              <p className="text-xs font-medium text-[var(--text-tertiary)]">
                 Data source
               </p>
               <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-[var(--text-secondary)]">
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
           {/* header row */}
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+              <p className="text-sm font-medium text-[var(--text-tertiary)]">
                 Overview
               </p>
               <h1 className="mt-2 font-display text-4xl font-bold tracking-[-0.02em] text-[var(--text-primary)]">
@@ -140,7 +140,7 @@ export default function AdminDashboard() {
                   <p className="font-mono text-4xl font-semibold tabular-nums text-[var(--text-primary)]">
                     {k.value}
                   </p>
-                  <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                  <p className="text-xs font-medium text-[var(--text-tertiary)]">
                     {k.label}
                   </p>
                 </div>
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
           {/* quick actions + recent */}
           <div className="grid gap-8 lg:grid-cols-5">
             <section className="lg:col-span-3">
-              <h2 className="font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+              <h2 className="text-sm font-medium text-[var(--text-tertiary)]">
                 Quick actions
               </h2>
               <div className="mt-4 grid grid-cols-1 gap-px border border-[var(--glass-border)] bg-[var(--glass-border)] sm:grid-cols-2" style={{ borderRadius: "var(--r-xl)", overflow: "hidden" }}>
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
 
             <section className="lg:col-span-2">
               <div className="flex items-center justify-between">
-                <h2 className="font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+                <h2 className="text-sm font-medium text-[var(--text-tertiary)]">
                   Recent
                 </h2>
                 <Link href="/events" className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)]">
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{r.title}</p>
-                      <p className="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      <p className="text-xs font-medium text-[var(--text-tertiary)]">
                         {r.org}
                       </p>
                     </div>

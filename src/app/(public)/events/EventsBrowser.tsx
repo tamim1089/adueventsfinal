@@ -61,7 +61,7 @@ function EventCard({ event, index }: { event: EventItem; index: number }) {
           )}
         </div>
         <div className="flex flex-1 flex-col p-5">
-          <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+          <span className="text-xs font-medium text-[var(--text-tertiary)]">
             {event.organizer}
           </span>
           <h3 className="mt-2 font-display text-2xl font-semibold leading-tight text-[var(--text-primary)]">
@@ -120,7 +120,7 @@ export default function EventsBrowser() {
       {/* header */}
       <div className="flex flex-col gap-6 border-b border-[var(--glass-border)] pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+          <p className="text-sm font-medium text-[var(--text-tertiary)]">
             Abu Dhabi University
           </p>
           <h1 className="mt-3 font-display text-[clamp(2.5rem,6vw,4.5rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[var(--text-primary)]">
@@ -134,7 +134,7 @@ export default function EventsBrowser() {
             <button
               key={t}
               onClick={() => switchTab(t)}
-              className={`relative pb-2 font-mono text-[0.8125rem] uppercase tracking-[0.16em] transition-colors ${
+              className={`relative pb-2 text-base font-semibold capitalize transition-colors ${
                 tab === t ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
               }`}
             >
@@ -165,7 +165,7 @@ export default function EventsBrowser() {
       <div className="grid grid-cols-1 gap-10 pt-10 lg:grid-cols-[240px_1fr]">
         {/* filter rail */}
         <aside className="lg:sticky lg:top-28 lg:self-start">
-          <p className="hidden font-mono text-[0.625rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)] lg:block">
+          <p className="hidden text-xs font-medium text-[var(--text-tertiary)] lg:block">
             Filter
           </p>
           <div className="mt-0 flex gap-2 overflow-x-auto pb-2 lg:mt-4 lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -207,7 +207,7 @@ export default function EventsBrowser() {
                 />
               </div>
               <div className="flex flex-col justify-center p-7 sm:p-9">
-                <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--accent)]">
+                <p className="text-sm font-medium text-[var(--accent)]">
                   Featured · {featured.organizer}
                 </p>
                 <h2 className="mt-3 font-display text-[clamp(1.75rem,3vw,2.5rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--text-primary)]">
