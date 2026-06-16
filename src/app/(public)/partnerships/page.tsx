@@ -11,7 +11,9 @@ export const metadata: Metadata = {
 const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
 
 export default function PartnershipsPage() {
-  const total = PARTNERS_DATA.length;
+  // Individuals are excluded from the public directory.
+  const partners = PARTNERS_DATA.filter((p) => p.category !== "individual");
+  const total = partners.length;
 
   return (
     <>
@@ -34,7 +36,7 @@ export default function PartnershipsPage() {
       </section>
 
       {/* interactive directory */}
-      <PartnerDirectory partners={PARTNERS_DATA} />
+      <PartnerDirectory partners={partners} />
 
       {/* CTA band */}
       <section
