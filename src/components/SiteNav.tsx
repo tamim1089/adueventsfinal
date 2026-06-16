@@ -79,7 +79,7 @@ export default function SiteNav() {
               <a
                 key={l.href}
                 href={l.href}
-                className={`group relative inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[0.95rem] font-medium transition-all duration-300 hover:-translate-y-0.5 hover:text-[var(--accent)] ${subText}`}
+                className={`group relative inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[1.05rem] font-medium transition-all duration-300 hover:-translate-y-0.5 hover:text-[var(--accent)] ${subText}`}
               >
                 <Icon
                   size={17}
@@ -93,7 +93,7 @@ export default function SiteNav() {
           })}
           <Link
             href="/admin"
-            className="ml-2 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[0.95rem] font-semibold text-[var(--accent-on)] shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97]"
+            className="ml-2 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[1.05rem] font-semibold text-[var(--accent-on)] shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97]"
             style={{ background: "var(--accent)" }}
           >
             Organizer sign in

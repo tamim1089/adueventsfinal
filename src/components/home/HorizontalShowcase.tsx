@@ -74,6 +74,13 @@ export default function HorizontalShowcase() {
           <h2 className="mt-3 max-w-3xl font-display text-[clamp(2rem,5vw,4rem)] font-bold leading-[1.0] tracking-[-0.02em] text-[var(--text-primary)]">
             Live across every campus.
           </h2>
+          <Link
+            href="/events"
+            className="mt-6 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-[var(--accent-on)] transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
+            style={{ background: "var(--accent)" }}
+          >
+            Browse all events <ArrowRight size={17} />
+          </Link>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {UPCOMING.map((e) => (
               <EventPanel key={e.slug} e={e} />
@@ -119,6 +126,13 @@ export default function HorizontalShowcase() {
                 {String(UPCOMING.length).padStart(2, "0")} events
               </span>
             </div>
+            <Link
+              href="/events"
+              className="mt-8 inline-flex w-fit items-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-[var(--accent-on)] transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
+              style={{ background: "var(--accent)" }}
+            >
+              Browse all events <ArrowRight size={17} />
+            </Link>
           </div>
 
           {/* event panels */}
