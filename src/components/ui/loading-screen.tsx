@@ -2,67 +2,69 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { SpaceBackground } from "./space-background";
 
+// Minimal, on-brand first paint: the ADU mark on warm paper with a thin
+// determinate hairline bar. No starfield / particles. Resolves in < 1s.
 export function LoadingScreen() {
   const [visible, setVisible] = useState(true);
-  const [fading,  setFading]  = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setFading(true),  3800);
-    const t2 = setTimeout(() => setVisible(false), 4500);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const raf = requestAnimationFrame(() => setProgress(100));
+    const t1 = setTimeout(() => setFading(true), 800);
+    const t2 = setTimeout(() => setVisible(false), 1200);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
   if (!visible) return null;
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 9999,
-      background: "#000000",
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center",
-      transition: "opacity 0.7s ease",
-      opacity: fading ? 0 : 1,
-      pointerEvents: fading ? "none" : "all",
-      overflow: "hidden",
-    }}>
-      {/* Faster gather: higher move speed, same 3s total */}
-      <SpaceBackground
-        particleCount={450}
-        particleColor="rgba(225,29,46,0.92)"
-        backgroundColor="transparent"
-        moveSpeed={2.8}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        background: "var(--bg-base)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 22,
+        transition: "opacity 0.4s var(--ease)",
+        opacity: fading ? 0 : 1,
+        pointerEvents: fading ? "none" : "all",
+      }}
+    >
+      <Image
+        src="/brand/adu-logo-transparent.png"
+        alt="Abu Dhabi University"
+        width={120}
+        height={40}
+        priority
+        style={{ height: 40, width: "auto", objectFit: "contain" }}
       />
-
-      <div style={{
-        position: "relative", zIndex: 10,
-        display: "flex", flexDirection: "column",
-        alignItems: "center", gap: 20,
-      }}>
-        <Image
-          src="/brand/ADU_Logo.png"
-          alt="Abu Dhabi University"
-          width={64} height={64}
-          priority
+      <div
+        style={{
+          width: 160,
+          height: 2,
+          borderRadius: 9999,
+          background: "var(--glass-border)",
+          overflow: "hidden",
+        }}
+      >
+        <div
           style={{
-            objectFit: "contain", width: 64, height: "auto", display: "block",
-            filter: "brightness(0) invert(1)",
+            height: "100%",
+            width: `${progress}%`,
+            background: "var(--accent)",
+            transition: "width 0.7s var(--ease)",
           }}
         />
-
-        <p style={{
-          color: "#ffffff",
-          fontSize: 9,
-          fontWeight: 400,
-          letterSpacing: "0.20em",
-          textTransform: "uppercase",
-          fontFamily: "'Inter', system-ui, sans-serif",
-          margin: 0,
-          opacity: 0.75,
-        }}>
-          Abu Dhabi University
-        </p>
       </div>
     </div>
   );

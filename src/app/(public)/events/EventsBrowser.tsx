@@ -1,317 +1,249 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, CalendarDays, Users, X, ExternalLink, ArrowRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { GlassFilter } from "@/components/ui/liquid-radio";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import Reveal from "@/components/landing/Reveal";
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
+import { Clock, MapPin, Users, ArrowRight } from "lucide-react";
 import { EVENTS_DATA, type EventItem } from "@/lib/events-data";
 
-// ──────────────────────────────────────────
-// Mobile bottom-sheet (Apple-style)
-// ──────────────────────────────────────────
-function EventSheet({
-  event,
-  onClose,
-}: {
-  event: EventItem;
-  onClose: () => void;
-}) {
-  // Lock body scroll while open
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = "" };
-  }, []);
+const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
+const EASE = [0.2, 0.8, 0.2, 1] as const;
 
+type Tab = "upcoming" | "past";
+
+/* ---- editorial event card (matches the home live strip) -------- */
+function EventCard({ event, index }: { event: EventItem; index: number }) {
+  const reduce = useReducedMotion();
+  const live = event.when.startsWith("Today");
   return (
-    <AnimatePresence>
-      <motion.div
-        key="backdrop"
-        className="fixed inset-0 z-50 bg-black/50"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-      <motion.div
-        key="sheet"
-        className="fixed bottom-0 left-0 right-0 z-50 overflow-hidden"
-        style={{
-          borderRadius: "24px 24px 0 0",
-          background: "var(--bg-elevated)",
-          maxHeight: "90dvh",
-          overflowY: "auto",
-          paddingBottom: "env(safe-area-inset-bottom, 24px)",
-        }}
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "spring", stiffness: 340, damping: 38 }}
+    <motion.div
+      layout
+      initial={reduce ? false : { opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: EASE, delay: Math.min(index, 8) * 0.04 }}
+    >
+      <Link
+        href={`/events/${event.slug}`}
+        className="faux-glass card-hover group flex h-full flex-col overflow-hidden"
       >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-[var(--glass-border)]" />
-        </div>
-
-        {/* Hero image */}
-        <div className="relative h-52 w-full overflow-hidden">
-          <Image src={event.image} alt={event.title} fill className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md"
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4">
-          <span className="inline-block rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent-strong)]">
-            {event.organizer}
-          </span>
-          <h2 className="font-display text-2xl font-bold text-[var(--text-primary)] leading-tight">
-            {event.title}
-          </h2>
-
-          {/* Meta */}
-          <div className="space-y-2.5">
-            {[
-              { icon: CalendarDays, value: event.when      },
-              { icon: MapPin,       value: event.venue     },
-              { icon: Users,        value: `${event.attending.toLocaleString()} attending` },
-            ].map(({ icon: Icon, value }) => (
-              <div key={value} className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
-                <Icon size={16} className="shrink-0 text-[var(--accent)]" />
-                {value}
-              </div>
-            ))}
-          </div>
-
-          <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{event.overview}</p>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button
-              className="flex-1 rounded-full py-3.5 text-sm font-semibold text-white"
+        <div className="relative aspect-[16/10] w-full overflow-hidden">
+          <Image
+            src={event.image}
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 360px, 100vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          />
+          {live && (
+            <span
+              className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white"
               style={{ background: "var(--accent)" }}
             >
-              Register
-            </button>
-            <Link
-              href={`/events/${event.slug}`}
-              className="flex items-center gap-1.5 rounded-full border border-[var(--glass-border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-primary)]"
-            >
-              Full page <ExternalLink size={14} />
-            </Link>
+              <span className="h-1.5 w-1.5 rounded-full bg-white" /> Live
+            </span>
+          )}
+        </div>
+        <div className="flex flex-1 flex-col p-5">
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+            {event.organizer}
+          </span>
+          <h3 className="mt-2 font-display text-2xl font-semibold leading-tight text-[var(--text-primary)]">
+            {event.title}
+          </h3>
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+            {event.overview}
+          </p>
+          <div className="mt-auto flex items-center gap-4 pt-5 font-mono text-[0.6875rem] tabular-nums text-[var(--text-secondary)]">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock size={13} className="text-[var(--text-tertiary)]" />
+              {event.when}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin size={13} className="text-[var(--text-tertiary)]" />
+              {event.venue}
+            </span>
           </div>
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </Link>
+    </motion.div>
   );
 }
 
-// ──────────────────────────────────────────
-// Card (shared — mobile opens sheet, desktop opens new page)
-// ──────────────────────────────────────────
-function EventCard({
-  event,
-  isMobile,
-  onMobileOpen,
-}: {
-  event: EventItem;
-  isMobile: boolean;
-  onMobileOpen: (e: EventItem) => void;
-}) {
-  const inner = (
-    <div className="group relative w-full overflow-hidden rounded-[24px] border border-[var(--glass-border)] bg-[var(--bg-elevated)] shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer h-full flex flex-col">
-      <div className="relative h-52 w-full overflow-hidden">
-        <Image
-          src={event.image} alt={event.title}
-          fill className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-        <span className="absolute bottom-3 left-4 inline-block rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
-          {event.organizer}
-        </span>
-      </div>
-      <div className="flex flex-col flex-1 p-5 gap-2">
-        <h3 className="font-display text-lg font-semibold text-[var(--text-primary)] leading-snug">
-          {event.title}
-        </h3>
-        <p className="text-sm text-[var(--text-secondary)] line-clamp-2 flex-1">{event.overview}</p>
-        <div className="flex items-center justify-between pt-2 text-xs text-[var(--text-tertiary)]">
-          <span className="flex items-center gap-1">
-            <CalendarDays size={12} />{event.when}
-          </span>
-          <span className="flex items-center gap-1">
-            <MapPin size={12} />{event.venue}
-          </span>
-        </div>
-        <div className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-[var(--accent)]">
-          View details <ArrowRight size={14} />
-        </div>
-      </div>
-    </div>
-  );
-
-  if (isMobile) {
-    return (
-      <button className="w-full text-left h-full" onClick={() => onMobileOpen(event)}>
-        {inner}
-      </button>
-    );
-  }
-  return <Link href={`/events/${event.slug}`} className="h-full block">{inner}</Link>;
-}
-
-// ──────────────────────────────────────────
-// Featured wide card
-// ──────────────────────────────────────────
-function FeaturedCard({
-  event,
-  isMobile,
-  onMobileOpen,
-}: {
-  event: EventItem;
-  isMobile: boolean;
-  onMobileOpen: (e: EventItem) => void;
-}) {
-  const inner = (
-    <div className="group relative w-full overflow-hidden rounded-[28px] border border-[var(--glass-border)] bg-[var(--bg-elevated)] shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer flex flex-col md:flex-row">
-      <div className="relative h-60 md:h-auto md:w-2/5 shrink-0 overflow-hidden">
-        <Image
-          src={event.image} alt={event.title}
-          fill className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/20 hidden md:block" />
-      </div>
-      <div className="flex flex-col justify-center p-6 sm:p-8 gap-3 flex-1">
-        <span className="inline-block w-fit rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent-strong)]">
-          {event.organizer} · Featured
-        </span>
-        <h2 className="font-display text-2xl sm:text-3xl font-bold text-[var(--text-primary)] leading-tight">
-          {event.title}
-        </h2>
-        <p className="text-[var(--text-secondary)] text-sm sm:text-base leading-relaxed line-clamp-2">
-          {event.overview}
-        </p>
-        <div className="flex flex-wrap gap-4 text-sm text-[var(--text-tertiary)]">
-          <span className="flex items-center gap-1.5"><CalendarDays size={14} />{event.when}</span>
-          <span className="flex items-center gap-1.5"><MapPin size={14} />{event.venue}</span>
-          <span className="flex items-center gap-1.5"><Users size={14} />{event.attending.toLocaleString()} attending</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--accent)] mt-1">
-          View full details <ArrowRight size={14} />
-        </div>
-      </div>
-    </div>
-  );
-
-  if (isMobile) {
-    return (
-      <button className="w-full text-left" onClick={() => onMobileOpen(event)}>
-        {inner}
-      </button>
-    );
-  }
-  return <Link href={`/events/${event.slug}`} className="block">{inner}</Link>;
-}
-
-// ──────────────────────────────────────────
-// Main Browser
-// ──────────────────────────────────────────
 export default function EventsBrowser() {
-  const [tab, setTab]             = useState<"upcoming" | "past">("upcoming");
-  const [sheetEvent, setSheetEvent] = useState<EventItem | null>(null);
-  const [isMobile, setIsMobile]   = useState(false);
-  const list     = EVENTS_DATA[tab];
-  const featured = list[0];
+  const [tab, setTab] = useState<Tab>("upcoming");
+  const [filter, setFilter] = useState<string>("all");
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check, { passive: true });
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  const tabEvents = EVENTS_DATA[tab];
+  const organizers = Array.from(new Set(tabEvents.map((e) => e.organizer)));
+
+  const filtered = tabEvents.filter((e) => {
+    if (filter === "all") return true;
+    if (filter === "live") return e.when.startsWith("Today");
+    return e.organizer === filter;
+  });
+
+  const showFeatured = tab === "upcoming" && filter === "all" && filtered.length > 0;
+  const featured = showFeatured ? filtered[0] : null;
+  const gridEvents = showFeatured ? filtered.slice(1) : filtered;
+
+  const switchTab = (t: Tab) => {
+    setTab(t);
+    setFilter("all");
+  };
+
+  const FILTERS: { key: string; label: string }[] = [
+    { key: "all", label: "All events" },
+    ...(tab === "upcoming" ? [{ key: "live", label: "Live now" }] : []),
+    ...organizers.map((o) => ({ key: o, label: o })),
+  ];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-28 sm:pt-32 pb-24 w-full">
+    <section className={`pb-24 pt-28 ${EDGE}`}>
+      {/* header */}
+      <div className="flex flex-col gap-6 border-b border-[var(--glass-border)] pb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+            Abu Dhabi University
+          </p>
+          <h1 className="mt-3 font-display text-[clamp(2.5rem,6vw,4.5rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[var(--text-primary)]">
+            Events
+          </h1>
+        </div>
 
-      {/* Header */}
-      <div className="flex flex-col gap-6 mb-12">
-        <Reveal>
-          <Image
-            src="/brand/adu-logo-transparent.png"
-            alt="Abu Dhabi University"
-            width={120}
-            height={40}
-            className="h-10 w-auto object-contain"
-            priority
-          />
-        </Reveal>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="font-display text-4xl sm:text-5xl font-bold text-[var(--text-primary)]">
-              Events
-            </h1>
-          </div>
-
-          {/* Tab toggle */}
-          <div className="inline-flex h-10 rounded-xl bg-[var(--bg-subtle)] p-0.5">
-          <RadioGroup
-            value={tab}
-            onValueChange={(v) => setTab(v as "upcoming" | "past")}
-            className="group relative inline-grid grid-cols-[1fr_1fr] items-center gap-0 text-sm font-medium
-              after:absolute after:inset-y-0 after:w-1/2 after:rounded-[10px] after:bg-[var(--bg-elevated)]
-              after:shadow-[0_1px_3px_rgba(0,0,0,0.12)] after:transition-transform after:duration-300
-              after:[transition-timing-function:cubic-bezier(0.16,1,0.3,1)]
-              data-[state=upcoming]:after:translate-x-0 data-[state=past]:after:translate-x-full"
-            data-state={tab}
-          >
-            <div className="absolute inset-0 -z-10 h-full w-full overflow-hidden rounded-xl" style={{ filter: 'url("#radio-glass")' }} />
-            <label className="relative z-10 inline-flex h-full cursor-pointer select-none items-center justify-center whitespace-nowrap px-5 transition-colors group-data-[state=upcoming]:text-[var(--text-primary)] group-data-[state=past]:text-[var(--text-tertiary)]">
-              Upcoming
-              <RadioGroupItem id="ev-upcoming" value="upcoming" className="sr-only" />
-            </label>
-            <label className="relative z-10 inline-flex h-full cursor-pointer select-none items-center justify-center whitespace-nowrap px-5 transition-colors group-data-[state=past]:text-[var(--text-primary)] group-data-[state=upcoming]:text-[var(--text-tertiary)]">
-              Past
-              <RadioGroupItem id="ev-past" value="past" className="sr-only" />
-            </label>
-            <GlassFilter />
-          </RadioGroup>
-          </div>
+        {/* tab switch — text links with a sliding underline, not a pill */}
+        <div className="flex items-center gap-8">
+          {(["upcoming", "past"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => switchTab(t)}
+              className={`relative pb-2 font-mono text-[0.8125rem] uppercase tracking-[0.16em] transition-colors ${
+                tab === t ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+              }`}
+            >
+              {t}
+              {tab === t && (
+                <motion.span
+                  layoutId="events-tab-underline"
+                  className="absolute inset-x-0 bottom-0 h-0.5"
+                  style={{ background: "var(--accent)" }}
+                />
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Featured */}
-      <Reveal className="mb-6">
-        <FeaturedCard
-          event={featured}
-          isMobile={isMobile}
-          onMobileOpen={setSheetEvent}
-        />
-      </Reveal>
+      {/* rail + content */}
+      <div className="grid grid-cols-1 gap-10 pt-10 lg:grid-cols-[240px_1fr]">
+        {/* filter rail */}
+        <aside className="lg:sticky lg:top-28 lg:self-start">
+          <p className="hidden font-mono text-[0.625rem] uppercase tracking-[0.2em] text-[var(--text-tertiary)] lg:block">
+            Filter
+          </p>
+          <div className="mt-0 flex gap-2 overflow-x-auto pb-2 lg:mt-4 lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {FILTERS.map((f) => {
+              const active = filter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-left text-sm transition-colors lg:rounded-none lg:border-0 lg:border-l-2 lg:px-3 lg:py-2.5 ${
+                    active
+                      ? "border-[var(--accent)] text-[var(--text-primary)] lg:border-l-[var(--accent)] lg:font-medium"
+                      : "border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] lg:border-l-transparent"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </aside>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {list.slice(1).map((e, i) => (
-          <Reveal key={e.slug} delay={i * 80} className="h-full">
-            <EventCard
-              event={e}
-              isMobile={isMobile}
-              onMobileOpen={setSheetEvent}
-            />
-          </Reveal>
-        ))}
+        {/* content */}
+        <div>
+          {/* featured split */}
+          {featured && (
+            <motion.div
+              layout
+              initial={false}
+              className="faux-glass mb-8 grid grid-cols-1 overflow-hidden md:grid-cols-2"
+            >
+              <div className="relative min-h-[220px] md:min-h-[340px]">
+                <Image
+                  src={featured.image}
+                  alt=""
+                  fill
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
+              <div className="flex flex-col justify-center p-7 sm:p-9">
+                <p className="font-mono text-[0.6875rem] uppercase tracking-[0.22em] text-[var(--accent)]">
+                  Featured · {featured.organizer}
+                </p>
+                <h2 className="mt-3 font-display text-[clamp(1.75rem,3vw,2.5rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--text-primary)]">
+                  {featured.title}
+                </h2>
+                <p className="mt-3 max-w-md leading-relaxed text-[var(--text-secondary)]">
+                  {featured.overview}
+                </p>
+                <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--glass-border)] pt-5 font-mono text-[0.75rem] tabular-nums text-[var(--text-secondary)]">
+                  <span className="inline-flex items-center gap-2">
+                    <Clock size={14} className="text-[var(--text-tertiary)]" /> {featured.when}
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <MapPin size={14} className="text-[var(--text-tertiary)]" /> {featured.venue}
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <Users size={14} className="text-[var(--text-tertiary)]" /> {featured.attending} attending
+                  </span>
+                </div>
+                <Link
+                  href={`/events/${featured.slug}`}
+                  className="mt-6 inline-flex w-fit items-center gap-2 font-semibold text-[var(--accent)] transition-transform hover:translate-x-0.5"
+                >
+                  View full details <ArrowRight size={17} />
+                </Link>
+              </div>
+            </motion.div>
+          )}
+
+          {/* fluid grid */}
+          {gridEvents.length > 0 ? (
+            <motion.div
+              layout
+              className="grid gap-5"
+              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}
+            >
+              <AnimatePresence mode="popLayout">
+                {gridEvents.map((e, i) => (
+                  <EventCard key={e.slug} event={e} index={i} />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          ) : (
+            !featured && (
+              <div className="flex flex-col items-start gap-3 border border-dashed border-[var(--glass-border)] p-10" style={{ borderRadius: "var(--r-xl)" }}>
+                <p className="font-display text-2xl font-semibold text-[var(--text-primary)]">
+                  Nothing here yet.
+                </p>
+                <p className="max-w-sm text-[var(--text-secondary)]">
+                  No {tab} events match this filter. Try another organizer or
+                  switch back to all events.
+                </p>
+                <button
+                  onClick={() => setFilter("all")}
+                  className="mt-1 inline-flex items-center gap-2 font-semibold text-[var(--accent)]"
+                >
+                  Show all events <ArrowRight size={16} />
+                </button>
+              </div>
+            )
+          )}
+        </div>
       </div>
-
-      {/* Mobile bottom sheet */}
-      {sheetEvent && (
-        <EventSheet event={sheetEvent} onClose={() => setSheetEvent(null)} />
-      )}
-    </div>
+    </section>
   );
 }
