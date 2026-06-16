@@ -1,7 +1,9 @@
-import GlassNav from "@/components/glass/GlassNav";
+import SiteNav from "@/components/SiteNav";
+import Footer from "@/components/Footer";
 
-// Public shell: floating glass nav over the dark canvas. The landing page
-// supplies its own backgrounds (video hero, ambient blobs).
+// Public shell: full-width nav with a hairline rule (not a floating glass pill),
+// and a shared editorial footer. Each page supplies its own backgrounds and
+// band rhythm.
 export default function PublicLayout({
   children,
 }: {
@@ -9,8 +11,9 @@ export default function PublicLayout({
 }) {
   return (
     <>
-      <GlassNav />
+      <SiteNav />
       <main>{children}</main>
+      <Footer />
     </>
   );
 }

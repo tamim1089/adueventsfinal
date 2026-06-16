@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import MotionProvider from "@/components/MotionProvider";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -13,13 +13,15 @@ const display = Fraunces({
   display: "swap",
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+// Body / UI face — a warm grotesque with real personality. Replaces Inter,
+// which reads as the AI-default body font.
+const body = Hanken_Grotesk({
+  variable: "--font-body",
   subsets: ["latin"],
   display: "swap",
 });
 
-// Monospace for eyebrows / metadata — the "curated dossier" register.
+// Monospace for eyebrows / metadata / figures — the "curated dossier" register.
 const mono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
@@ -45,7 +47,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${inter.variable} ${mono.variable} h-full antialiased`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}>
       <body className="min-h-full">
         <LoadingScreen />
         <MotionProvider>{children}</MotionProvider>
