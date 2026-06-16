@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { ShaderAnimation } from "@/components/ui/shader-animation";
 
 // The hero is a deliberate DARK band on the light page (the shader needs black).
@@ -49,14 +50,28 @@ export default function HeroBackground() {
 
   return (
     <div ref={rootRef} className="absolute inset-0 -z-10 overflow-hidden bg-black">
+      {/* campus photo — the base layer the shader waves play over */}
+      <Image
+        src="/media/unifront.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover opacity-70"
+      />
+      {/* darken the photo so the shader reads and text stays legible */}
+      <div className="absolute inset-0 bg-black/40" />
       {animate ? (
-        <div className="absolute inset-0 [&>div]:!h-full">
+        // 'screen' blend: the shader's black becomes transparent, so its
+        // glowing waves add over the photo instead of hiding it.
+        <div className="absolute inset-0 [&>div]:!h-full" style={{ mixBlendMode: "screen" }}>
           <ShaderAnimation />
         </div>
       ) : (
         <div
           className="absolute inset-0"
           style={{
+            mixBlendMode: "screen",
             background:
               "radial-gradient(120% 100% at 20% 0%, #1b2a6b 0%, #0a0c16 55%, #000 100%)",
           }}
