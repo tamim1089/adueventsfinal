@@ -57,19 +57,21 @@ export default function HeroBackground() {
         fill
         priority
         sizes="100vw"
-        className="object-cover opacity-70"
+        className="object-cover"
       />
-      {/* darken the photo so the shader reads and text stays legible */}
-      <div className="absolute inset-0 bg-black/40" />
       {animate ? (
         // 'screen' blend: the shader's black becomes transparent, so its
-        // glowing waves add over the photo instead of hiding it.
-        <div className="absolute inset-0 [&>div]:!h-full" style={{ mixBlendMode: "screen" }}>
+        // glowing waves add over the photo instead of hiding it. Kept at a
+        // reduced opacity so the campus photo stays clearly visible beneath.
+        <div
+          className="absolute inset-0 opacity-60 [&>div]:!h-full"
+          style={{ mixBlendMode: "screen" }}
+        >
           <ShaderAnimation />
         </div>
       ) : (
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 opacity-70"
           style={{
             mixBlendMode: "screen",
             background:
