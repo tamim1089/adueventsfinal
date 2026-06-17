@@ -86,6 +86,24 @@ export async function getOverview(sb: SB) {
   };
 }
 
+export type Photo = { id: string; event_id: string; path: string; caption: string | null; url: string };
+
+export async function getPhotos(sb: SB): Promise<Photo[]> {
+  const { data } = await sb
+    .from("photos")
+    .select("id, event_id, path, caption, sort_order")
+    .order("sort_order", { ascending: true });
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((p: any) => ({
+    id: p.id,
+    event_id: p.event_id,
+    path: p.path,
+    caption: p.caption ?? null,
+    url: `${base}/storage/v1/object/public/photos/${p.path}`,
+  }));
+}
+
 export type Attendee = {
   id: string;
   full_name: string;
