@@ -5,7 +5,10 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Clock, MapPin, Users } from "lucide-react";
 import type { EventItem } from "@/lib/events-data";
-import CertificateRegister from "./CertificateRegister";
+import type { School } from "@/lib/schools-data";
+import RegistrationSheet from "./RegistrationSheet";
+
+type DetailEvent = EventItem & { id?: string; audience?: "uni" | "external" };
 
 const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
 const EASE = [0.2, 0.8, 0.2, 1] as const;
@@ -42,9 +45,11 @@ const FACTS = (e: EventItem) => [
 export default function EventDetail({
   event,
   related,
+  schools,
 }: {
-  event: EventItem;
-  related: EventItem[];
+  event: DetailEvent;
+  related: DetailEvent[];
+  schools: School[];
 }) {
   const reduce = useReducedMotion();
 
@@ -102,7 +107,12 @@ export default function EventDetail({
                 ))}
               </dl>
 
-              <CertificateRegister slug={event.slug} title={event.title} />
+              {event.id ? (
+                <RegistrationSheet
+                  event={{ id: event.id, title: event.title, audience: event.audience ?? "uni" }}
+                  schools={schools}
+                />
+              ) : null}
             </div>
           </FadeUp>
 
