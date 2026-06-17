@@ -11,7 +11,7 @@ const csp = [
   `default-src 'self'`,
   `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline'`,
   `style-src 'self' 'unsafe-inline'`,
-  `img-src 'self' data: blob: https://i.ytimg.com https://logo.clearbit.com ${supabaseHost}`.trim(),
+  `img-src 'self' data: blob: https://i.ytimg.com https://www.google.com https://*.gstatic.com ${supabaseHost}`.trim(),
   `media-src 'self'`,
   `font-src 'self'`,
   `connect-src 'self' ${supabaseHost}`.trim(),

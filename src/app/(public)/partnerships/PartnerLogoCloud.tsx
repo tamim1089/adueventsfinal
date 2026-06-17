@@ -18,22 +18,27 @@ const initials = (s: string) => s.split(/\s+/).slice(0, 2).map((w) => w[0]).join
 type Card = { partner: Partner; domain: string; emails: string[]; phones: string[] };
 
 function LogoCell({ card }: { card: Card }) {
-  const [broken, setBroken] = useState(false);
+  const [noIcon, setNoIcon] = useState(!card.domain);
   return (
-    <div className="group relative flex aspect-[3/2] items-center justify-center border-b border-r border-[var(--glass-border)] bg-[var(--bg-base)] p-6">
+    <div className="group relative flex aspect-[3/2] flex-col items-center justify-center gap-2.5 border-b border-r border-[var(--glass-border)] bg-[var(--bg-base)] p-5 transition-colors hover:bg-[var(--bg-subtle)]">
       <Plus className="pointer-events-none absolute -bottom-[9px] -right-[9px] z-10 size-4 text-[var(--glass-border)]" strokeWidth={1.5} />
-      {broken ? (
-        <span className="font-display text-2xl font-bold text-[var(--text-tertiary)]">{initials(card.partner.name)}</span>
+      {noIcon ? (
+        <span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--bg-subtle)] font-display text-sm font-bold text-[var(--text-secondary)]">{initials(card.partner.name)}</span>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`https://logo.clearbit.com/${card.domain}`}
-          alt={card.partner.name}
-          className="max-h-10 w-auto max-w-[78%] object-contain opacity-80 transition-opacity group-hover:opacity-100"
-          onError={() => setBroken(true)}
+          src={`https://www.google.com/s2/favicons?domain=${card.domain}&sz=64`}
+          alt=""
+          width={32}
+          height={32}
+          className="h-8 w-8 object-contain opacity-90 transition-opacity group-hover:opacity-100"
+          onError={() => setNoIcon(true)}
           loading="lazy"
         />
       )}
+      <span dir="auto" className="line-clamp-2 px-1 text-center font-display text-[0.9375rem] font-semibold leading-tight text-[var(--text-primary)]">
+        {card.partner.name}
+      </span>
 
       {/* hover contact card */}
       <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-60 -translate-x-1/2 translate-y-1 border border-[var(--glass-border)] bg-[var(--bg-elevated)] p-4 opacity-0 shadow-xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100" style={{ borderRadius: "var(--r-lg)" }}>
@@ -56,27 +61,23 @@ function LogoCell({ card }: { card: Card }) {
 }
 
 export default function PartnerLogoCloud({ partners }: { partners: Partner[] }) {
-  const cards: Card[] = partners
-    .filter((p) => (p.category === "company" || p.category === "gov") && /[A-Za-z]/.test(p.name))
-    .map((p) => {
-      const domain = domainOf(p);
-      if (!domain) return null;
-      const emails = p.contacts.flatMap((c) => c.emails);
-      const phones = p.contacts.flatMap((c) => c.phones);
-      return { partner: p, domain, emails, phones };
-    })
-    .filter(Boolean) as Card[];
-
-  // de-dupe by domain, keep a clean count
   const seen = new Set<string>();
-  const unique = cards.filter((c) => (seen.has(c.domain) ? false : (seen.add(c.domain), true)));
+  const unique: Card[] = partners
+    .filter((p) => (p.category === "company" || p.category === "gov") && /[A-Za-z]/.test(p.name))
+    .map((p) => ({
+      partner: p,
+      domain: domainOf(p) ?? "",
+      emails: p.contacts.flatMap((c) => c.emails),
+      phones: p.contacts.flatMap((c) => c.phones),
+    }))
+    .filter((c) => (seen.has(c.partner.id) ? false : (seen.add(c.partner.id), true)));
 
   if (unique.length === 0) return null;
 
   return (
     <div className="grid grid-cols-2 border-l border-t border-[var(--glass-border)] sm:grid-cols-3 lg:grid-cols-5">
       {unique.map((c) => (
-        <LogoCell key={c.domain} card={c} />
+        <LogoCell key={c.partner.id} card={c} />
       ))}
     </div>
   );
