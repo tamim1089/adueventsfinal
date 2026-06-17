@@ -1,45 +1,57 @@
-# Final build plan — functionality first, then design
+# Build plan — media, calendar, photos, online events, certs, hero slide, perf
 
-Goal: a real working version. Order = **make it live → dashboard works → calendar/conflicts → registration → design polish.**
+## A. Manual steps you'll do (I'll tell you exactly when)
+1. **Run one SQL file** `supabase/migrations/0005_media_online.sql` (storage upload policies for `posters`/`photos`, make those two buckets public-read, + events `mode`/`meeting_url`/`banner_path`, + certificate `sent_at`/`email`).
+2. **Resend key** (for emailing certs + meeting links):
+   - Go to **resend.com** → sign up free → **API Keys → Create API Key** → copy.
+   - **Paste it here**; I add `RESEND_API_KEY` to `.env.local`. You add the same on **Netlify → Environment variables**.
+   - Sender defaults to `onboarding@resend.dev` (works immediately); later you can verify an `adu.ac.ae` domain in Resend for a branded sender.
+3. **Fast “precompiled” local run** (no per-route compile lag): I'll switch you from `npm run dev` to `npm run build && npm run start`. Pages are prebuilt → instant. (I'll run it for you.)
 
-## What you must do (inputs only you can do)
-1. **Run SQL** in Supabase SQL Editor: `supabase/migrations/0003_phase1.sql`, then the new `0004_phase2.sql` I'll add in Phase 1. (I can't run DDL with an API key.)
-2. **Create a login user**: Supabase → Authentication → Users → Add user (email + password, Auto-Confirm). Then run this once in SQL editor to make it an admin:
-   `update profiles set role='admin' where id=(select id from auth.users where email='YOUR_EMAIL');`
-   → that email+password is your dashboard login.
-3. **Env vars on Netlify** (Site config → Environment variables): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `RESEND_API_KEY` (from resend.com, free). Local `.env.local` already has the 3 Supabase ones; I'll add RESEND there too once you give it.
+## B. Phases (functionality first)
 
-## Phase 1 — Go live + login works
-- Add `0004_phase2.sql`: event time/venue **conflict guard** (no overlapping events in the same venue), certificate send-tracking (`certificates.sent_at`, `email`), and any missing columns.
-- Flip all reads to the DB via `lib/data.ts` (already built, with static fallback): home, `/events`, `/events/[slug]`, admin. Handle existing rows without slugs (auto-skip/generate).
-- Confirm the auth gate (`/admin` → `/admin/login`) and that your created user logs in.
+### Phase 1 — Perf: precompiled local
+Stop `next dev`; run `next build` then `next start` on :3001. Document a one-command script. (Dev only compiles on demand — prod is fully precompiled and fast.)
 
-## Phase 2 — Dashboard: everything works
-- **Auth + session**: real sign-in/out; show the logged-in user.
-- **Sidebar pages, all functional**: Overview, Events (list + create/edit/delete with poster/date/time/location/audience/cert description), Attendance (view registrants, import CSV), Certificates, Surveys (create + responses), Photos (upload to bucket), Reports (per-event export), Annual reports (per dept upload). Every sidebar link routes to a real page.
-- **Search** (top bar): searches events/attendees, navigates to them.
-- **Notifications**: a working dropdown (recent registrations / upcoming events).
-- **Certificates flow change (your ask):** registration does **NOT** download a cert. On an event's dashboard page, once it has ended, a **"Send certificates"** action renders each attendee's PDF, stores it, and **emails it via Resend**. Shows sent status; re-send safe.
-- Real KPI numbers from the DB; "New event" works.
+### Phase 2 — Schema (0005) + storage
+- `events`: `mode text default 'in_person' check in ('in_person','online')`, `meeting_url text`, `banner_path text`.
+- `certificates`: `sent_at timestamptz`, `email text`.
+- Make `posters` + `photos` buckets **public-read**; add `storage.objects` policies so signed-in managers can upload/delete in `posters`, `photos`, `attendance`.
+- (Gallery rows use the existing `photos` table; banner uses `events.banner_path`.)
 
-## Phase 3 — Weekly calendar (sidebar) + conflict prevention
-- New sidebar item **"Calendar"**: a wide Mon–Sun week view, every event on its day/time; click → the **admin** event detail (editable), not the public page.
-- **Conflict prevention**: creating/editing an event that overlaps another in the same venue/time is blocked (DB guard + clear UI error).
+### Phase 3 — Event media management (in edit)
+- **Banner image** (one): a dedicated uploader at the top of the edit page → uploads to `posters` bucket → sets `events.banner_path`. Replace/remove. This is the event's hero image on the public site.
+- **Gallery media** (many): an "Event media" manager below → upload multiple → `photos` bucket + a `photos` row each; grid with delete + drag-reorder + caption. Clear visual split: **Banner** (single, framed 16:9) vs **Gallery** (grid of thumbnails).
+- Public event page shows banner as hero + a gallery section.
 
-## Phase 4 — Registration (legit, conditional, mobile)
-- Replace the plain popover with a proper form that **slides up from the bottom as a draggable sheet on mobile** (dismiss by swiping down), a centered dialog on desktop.
-- **Uni events** → require ID + full name + position in uni. **External events** → require full name + grade + **pick your school** (searchable, from the 152-school DB, English). A **dummy external event** ("Schools STEM Open Day") is already seeded for the demo.
-- Submitting records the attendee in Supabase (no cert download). Confirmation screen only.
+### Phase 4 — Photos page = real gallery
+- Group all media **by event** (and an "Unassigned/Campus" group). Each group = a titled section with a responsive thumbnail grid.
+- Upload into any event, delete, set caption, set as banner. Empty state with an upload button (fixes the "just a count box, can't upload" problem).
 
-## Phase 5 — Public design polish
-- **Hero horizontal intro**: the uni-entrance slide is first; scrolling slides **left** to a second slide, *then* continues vertically.
-- **Partners → logo-cloud grid** (your paste): bordered cells with plus-marks; square logos in square cells, wide ones arranged; **companies only — no Arabic, no people names**; hover shows basic contact info.
-- **Nav**: add an **"Empowered Ed Series"** item + a dummy page for it (icon included).
-- **Hero buttons**: more gap between label and the chevron (they're too close now).
-- **Socials** (footer): real ADU links — youtube.com/@AbuDhabiUni, instagram.com/abudhabiuni, x.com/abudhabiuni, linkedin.com/school/abu-dhabi-university.
-- Final sweep: confirm no tiny all-caps remain; bigger nav already done.
+### Phase 5 — Calendar redesign
+- Fill the page (taller day cells, real week height), not a thin bar with empty space below.
+- Each event = a **colored rounded rectangle** (color derived from its organizer — a fixed palette), title + time, click → edit.
+- Optional month toggle later; week view first, bigger and balanced.
 
-## Notes
-- Already done in prior turns: all-caps sweep, bigger nav + icons + hover, animated hero buttons, no text-selection, partners directory (will be reworked into the logo cloud), backend foundation SQL + schools DB + data layer.
-- Dependencies to add: `resend` (email), `@radix-ui/react-dialog` or a drag sheet lib for the registration sheet.
-- I'll run `npm run build` + `npm run lint` after each phase and push.
+### Phase 6 — Online vs in-person + Teams
+- Event form: **Mode** = In person (→ Venue field) OR Online (→ **Teams meeting link** + the date already on the event).
+- On create (or an **"Send invite"** button you approve), email all registrants the meeting link + date via Resend. Status shown ("invite sent").
+- Public/registration shows "Online — link sent on registration" vs venue.
+
+### Phase 7 — Certificates by email (Resend)
+- On an event's admin page: a **registrants table** (name, email, ID/position or grade/school, registered date).
+- A **"Send certificates"** button (enabled once event ended + `RESEND_API_KEY` set): renders each PDF, stores it, emails each attendee, marks `sent_at`. Re-send safe. No more instant download on registration.
+
+### Phase 8 — Font / UX pass (whole site + dashboard)
+- Bump the many tiny labels (calendar times, table headers, meta) to readable sizes; increase row height/padding; friendlier spacing; keep the editorial system. Apply the UI/UX rules (hierarchy, hit targets ≥40px, breathing room).
+
+### Phase 9 — Hero horizontal slide (the big one)
+- The very first screen becomes a **pinned horizontal scroller**:
+  - **Slide 1** = current hero (uni photo + logo + title + buttons).
+  - Scrolling down **translates the whole frame left** to **Slide 2** (e.g., live highlights / "what's on").
+  - After Slide 2, continued scrolling **releases** and the page scrolls **down** normally into the rest.
+- Built with a sticky section whose height = (#slides × viewport), `useScroll` mapping scroll progress → `translateX`, then unpins. Respects reduced-motion (falls back to stacked). Mobile: simpler (no hijack).
+
+## C. Notes
+- Storage uploads need Phase 2 SQL first; cert/meeting emails need the Resend key.
+- I'll `npm run build` + `npm run lint` after each phase, push, and serve the precompiled build so it's fast for you.
