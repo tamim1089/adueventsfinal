@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ArrowRight } from "lucide-react";
 import { PARTNERS_DATA } from "@/lib/partnerships-data";
 import PartnerDirectory from "./PartnerDirectory";
+import PartnerLogoCloud from "./PartnerLogoCloud";
 
 export const metadata: Metadata = {
   title: "Partners & MoUs",
@@ -33,6 +34,20 @@ export default function PartnershipsPage() {
         <p className="mt-6 text-sm font-medium text-[var(--text-tertiary)]">
           {total} partners on file
         </p>
+      </section>
+
+      {/* logo wall — companies & government, hover for contact */}
+      <section className="border-b border-[var(--glass-border)] bg-[var(--bg-base)] py-16 sm:py-20">
+        <div className={EDGE}>
+          <p className="text-sm font-medium text-[var(--text-tertiary)]">Trusted by</p>
+          <h2 className="mt-3 font-display text-[clamp(1.75rem,4vw,3rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--text-primary)]">
+            Companies &amp; entities we work with.
+          </h2>
+          <p className="mt-3 max-w-xl text-[var(--text-secondary)]">Hover any logo for contact details.</p>
+        </div>
+        <div className="mt-10 px-[clamp(1.25rem,4vw,5rem)]">
+          <PartnerLogoCloud partners={partners} />
+        </div>
       </section>
 
       {/* interactive directory */}
