@@ -32,8 +32,8 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "ADU Events — Abu Dhabi University",
-    template: "%s · ADU Events",
+    default: "ADU Events",
+    template: "%s · ADU",
   },
   description:
     "Discover, organize, and document events across ADU — colleges, departments, and centers, all in one place.",

@@ -3,7 +3,7 @@ import { requireAdmin, listOrganizers, getEvent, getAttendees } from "@/lib/admi
 import EventForm from "../../EventForm";
 import SendCertsButton from "../SendCertsButton";
 
-export const metadata = { title: "Edit event" };
+export const metadata = { title: "Edit" };
 
 export default async function EditEvent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

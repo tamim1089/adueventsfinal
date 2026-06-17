@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Calendar, Clock, MapPin, Globe, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "EmpowerED Series",
+  title: "EmpowerED",
   description: "ADU Al Ain Campus — EmpowerED Series: Knowledge, Skills, and Impact. A free public workshop series for educators, students, and the community.",
 };
 

@@ -4,7 +4,7 @@ import { PARTNERS_DATA } from "@/lib/partnerships-data";
 import PartnerDirectory from "./PartnerDirectory";
 
 export const metadata: Metadata = {
-  title: "Partners & MoUs",
+  title: "Partners",
   description: "ADU Al Ain Campus partners — government, corporate, educational, and individual, with MoUs.",
 };
 
