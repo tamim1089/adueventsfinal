@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
         <span className="pointer-events-none absolute -left-16 bottom-24 h-72 w-72 rounded-full border border-white/10" aria-hidden="true" />
 
         <div className="relative z-10">
-          <Image src="/brand/adu-logo-transparent.png" alt="Abu Dhabi University" width={2500} height={1878} priority className="h-16 w-auto object-contain object-left drop-shadow-lg" />
+          <Image src="/brand/adu-mark.png" alt="Abu Dhabi University" width={699} height={699} priority className="h-16 w-auto object-contain drop-shadow-lg" />
         </div>
 
         <div className="relative z-10">

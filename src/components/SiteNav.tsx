@@ -51,23 +51,14 @@ export default function SiteNav() {
         aria-label="Primary"
       >
         <Link href="/" className="group flex items-center gap-2.5">
-          <span
-            className={
-              solid
-                ? ""
-                : "inline-flex items-center justify-center rounded-md bg-white px-2 py-1.5"
-            }
-          >
-            <Image
-              src="/brand/ADU_Logo.png"
-              alt="Abu Dhabi University"
-              width={36}
-              height={26}
-              priority
-              className="transition-transform duration-300 group-hover:scale-105"
-              style={{ height: 26, width: "auto", objectFit: "contain" }}
-            />
-          </span>
+          <Image
+            src="/brand/adu-mark.png"
+            alt="Abu Dhabi University"
+            width={699}
+            height={699}
+            priority
+            className="h-8 w-8 object-contain transition-transform duration-300 group-hover:scale-105"
+          />
           <span className={`text-base font-semibold tracking-tight ${text}`}>ADU Events</span>
         </Link>
 

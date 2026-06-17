@@ -31,7 +31,7 @@ function HeroPanel({ reduce }: { reduce: boolean | null }) {
 
       <div className={`relative z-10 flex h-full flex-col ${EDGE}`}>
         <motion.div className="pt-24 sm:pt-28" initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}>
-          <Image src="/brand/adu-logo-transparent.png" alt="Abu Dhabi University" width={2500} height={1878} priority className="h-20 w-auto object-contain object-left drop-shadow-lg sm:h-28 lg:h-32" />
+          <Image src="/brand/adu-mark.png" alt="Abu Dhabi University" width={699} height={699} priority className="h-16 w-auto object-contain drop-shadow-lg sm:h-20 lg:h-24" />
         </motion.div>
 
         <div className="mt-auto pb-8">
