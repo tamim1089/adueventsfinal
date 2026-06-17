@@ -31,16 +31,25 @@ function HeroPanel({ reduce }: { reduce: boolean | null }) {
 
       <div className={`relative z-10 flex h-full flex-col ${EDGE}`}>
         <motion.div className="pt-24 sm:pt-28" initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}>
-          <Image src="/brand/adu-logo-transparent.png" alt="Abu Dhabi University" width={2500} height={1878} priority className="h-24 w-auto object-contain object-left sm:h-36 lg:h-44" />
+          <span className="inline-flex rounded-2xl bg-white/95 p-3 shadow-lg sm:p-4">
+            <Image src="/brand/adu-logo.png" alt="Abu Dhabi University" width={2243} height={1680} priority className="h-16 w-auto object-contain sm:h-20 lg:h-24" />
+          </span>
         </motion.div>
 
         <div className="mt-auto pb-8">
-          <h1 className="font-display font-bold leading-[0.92] tracking-[-0.035em] text-white text-[clamp(3rem,9vw,8rem)]">
-            <span className="block overflow-hidden"><motion.span className="block" custom={0} variants={lineReveal} initial={reduce ? "show" : "hidden"} animate="show">Every ADU event,</motion.span></span>
-            <span className="block overflow-hidden"><motion.span className="block" style={{ color: "var(--accent)" }} custom={1} variants={lineReveal} initial={reduce ? "show" : "hidden"} animate="show">in one place.</motion.span></span>
+          <h1 className="max-w-4xl font-display font-bold leading-[0.95] tracking-[-0.03em] text-white text-[clamp(2.25rem,6.5vw,6rem)]">
+            <span className="block overflow-hidden"><motion.span className="block" custom={0} variants={lineReveal} initial={reduce ? "show" : "hidden"} animate="show">ADU Al Ain Campus Gateway</motion.span></span>
           </h1>
+          <motion.p
+            className="mt-4 max-w-2xl font-sans text-[clamp(1.05rem,2.4vw,1.9rem)] font-semibold leading-snug tracking-tight"
+            style={{ color: "var(--accent)" }}
+            initial={reduce ? false : { opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: EASE, delay: 0.45 }}
+          >
+            Events. Partnerships. Empowered Learning. Community Impact.
+          </motion.p>
           <motion.div initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.6 }}>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/85">What&apos;s on across ADU — every college, department, and center, the moment it goes live.</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <GetStartedButton href="/events" label="Explore events" />
               <GetStartedButton href="/admin" label="Organizer sign in" variant="ghost" />
