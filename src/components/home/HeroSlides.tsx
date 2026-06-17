@@ -35,12 +35,12 @@ function HeroPanel({ reduce }: { reduce: boolean | null }) {
         </motion.div>
 
         <div className="mt-auto pb-8">
-          <h1 className="max-w-4xl font-display font-bold leading-[0.95] tracking-[-0.03em] text-white text-[clamp(2.25rem,6.5vw,6rem)]">
+          <h1 className="max-w-4xl font-display font-bold leading-[0.95] tracking-[-0.03em] text-white text-[clamp(2.25rem,6.5vw,6rem)]" style={{ textShadow: "0 2px 24px rgba(16,12,10,0.4)" }}>
             <span className="block overflow-hidden"><motion.span className="block" custom={0} variants={lineReveal} initial={reduce ? "show" : "hidden"} animate="show">ADU Al Ain Campus Gateway</motion.span></span>
           </h1>
           <motion.p
             className="mt-4 max-w-2xl font-sans text-[clamp(1.05rem,2.4vw,1.9rem)] font-semibold leading-snug tracking-tight"
-            style={{ color: "var(--accent)" }}
+            style={{ color: "#ff3346", textShadow: "0 1px 2px rgba(16,12,10,0.55), 0 2px 16px rgba(16,12,10,0.6)" }}
             initial={reduce ? false : { opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: EASE, delay: 0.45 }}
