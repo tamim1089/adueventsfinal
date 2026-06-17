@@ -31,7 +31,14 @@ export type AdminEvent = {
   attending: number;
   certificate_description: string | null;
   contact_hours: string | null;
+  banner_path: string | null;
 };
+
+// Public URL for a photos-bucket path (banners + galleries live there).
+export function photoUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/photos/${path}`;
+}
 
 type SB = Awaited<ReturnType<typeof createClient>>;
 

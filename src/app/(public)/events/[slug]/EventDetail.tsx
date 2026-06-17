@@ -1,14 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Clock, MapPin, Users } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { ArrowLeft, ArrowRight, Clock, MapPin, Users, X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { EventItem } from "@/lib/events-data";
 import type { School } from "@/lib/schools-data";
+import type { GalleryPhoto } from "@/lib/data";
 import RegistrationSheet from "./RegistrationSheet";
 
-type DetailEvent = EventItem & { id?: string; audience?: "uni" | "external" };
+type DetailEvent = EventItem & { id?: string; audience?: "uni" | "external"; bannerUrl?: string | null };
 
 const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
 const EASE = [0.2, 0.8, 0.2, 1] as const;
@@ -46,18 +48,21 @@ export default function EventDetail({
   event,
   related,
   schools,
+  gallery = [],
 }: {
   event: DetailEvent;
   related: DetailEvent[];
   schools: School[];
+  gallery?: GalleryPhoto[];
 }) {
   const reduce = useReducedMotion();
+  const [lightbox, setLightbox] = useState<number | null>(null);
 
   return (
     <>
       {/* ===== full-bleed hero ===== */}
       <section className="relative flex h-[clamp(420px,70vh,720px)] w-full flex-col justify-end overflow-hidden">
-        <Image src={event.image} alt="" fill priority sizes="100vw" className="object-cover" />
+        <Image src={event.bannerUrl || event.image} alt="" fill priority sizes="100vw" className="object-cover" />
         <div
           className="absolute inset-0"
           style={{ background: "linear-gradient(180deg, rgba(16,12,10,0.35) 0%, rgba(16,12,10,0.2) 35%, rgba(16,12,10,0.85) 100%)" }}
@@ -133,6 +138,41 @@ export default function EventDetail({
           </FadeUp>
         </div>
       </section>
+
+      {/* ===== gallery ===== */}
+      {gallery.length > 0 && (
+        <section className={`border-b border-[var(--glass-border)] bg-[var(--bg-subtle)] py-16 sm:py-20 ${EDGE}`}>
+          <FadeUp>
+            <p className="text-sm font-medium text-[var(--text-tertiary)]">Gallery</p>
+            <h2 className="mt-3 font-display text-[clamp(1.75rem,4vw,3rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--text-primary)]">Moments from the event.</h2>
+          </FadeUp>
+          <div className="mt-8 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
+            {gallery.map((g, i) => (
+              <button key={i} onClick={() => setLightbox(i)} className="card-hover group relative aspect-[4/3] overflow-hidden rounded-[var(--r-lg)] border border-[var(--glass-border)]">
+                <Image src={g.url} alt={g.caption ?? ""} fill sizes="240px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* lightbox */}
+      <AnimatePresence>
+        {lightbox !== null && gallery[lightbox] && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setLightbox(null)}
+          >
+            <button onClick={() => setLightbox(null)} className="absolute right-5 top-5 rounded-full bg-white/10 p-2 text-white hover:bg-white/20" aria-label="Close"><X size={22} /></button>
+            <button onClick={(e) => { e.stopPropagation(); setLightbox((v) => (v! - 1 + gallery.length) % gallery.length); }} className="absolute left-4 rounded-full bg-white/10 p-3 text-white hover:bg-white/20" aria-label="Previous"><ChevronLeft size={22} /></button>
+            <div className="relative h-[80vh] w-[90vw] max-w-5xl" onClick={(e) => e.stopPropagation()}>
+              <Image src={gallery[lightbox].url} alt={gallery[lightbox].caption ?? ""} fill sizes="90vw" className="object-contain" />
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); setLightbox((v) => (v! + 1) % gallery.length); }} className="absolute right-4 rounded-full bg-white/10 p-3 text-white hover:bg-white/20" aria-label="Next"><ChevronRight size={22} /></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ===== related — full-bleed strip ===== */}
       {related.length > 0 && (

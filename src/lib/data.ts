@@ -12,9 +12,12 @@ export type Event = EventItem & {
   id?: string;
   audience?: Audience;
   startsAt?: string;
+  bannerUrl?: string | null;
   certificateDescription?: string | null;
   contactHours?: string | null;
 };
+
+export type GalleryPhoto = { url: string; caption: string | null };
 
 // Server-only reads. Prefer the service-role key (bypasses RLS, always works
 // server-side); fall back to the anon key. Never imported by client code.
@@ -51,6 +54,7 @@ function mapRow(r: any): Event {
     id: r.id,
     audience: r.audience ?? "uni",
     startsAt: r.starts_at ?? undefined,
+    bannerUrl: r.banner_path ? `${url}/storage/v1/object/public/photos/${r.banner_path}` : null,
     certificateDescription: r.certificate_description ?? null,
     contactHours: r.contact_hours ?? null,
   };
@@ -93,6 +97,17 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
   }
   const stat = [...EVENTS_DATA.upcoming, ...EVENTS_DATA.past].find((e) => e.slug === slug);
   return stat ? { ...stat, audience: "uni" } : null;
+}
+
+export async function getEventPhotos(eventId: string): Promise<GalleryPhoto[]> {
+  if (!sb) return [];
+  const { data } = await sb
+    .from("photos")
+    .select("path, caption")
+    .eq("event_id", eventId)
+    .order("sort_order", { ascending: true });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((p: any) => ({ url: `${url}/storage/v1/object/public/photos/${p.path}`, caption: p.caption ?? null }));
 }
 
 export async function searchSchools(query: string, limit = 20): Promise<School[]> {

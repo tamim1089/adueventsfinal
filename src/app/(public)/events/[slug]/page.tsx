@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getEvents, getEventBySlug, searchSchools } from "@/lib/data";
+import { getEvents, getEventBySlug, searchSchools, getEventPhotos } from "@/lib/data";
 import EventDetail from "./EventDetail";
 
 export async function generateStaticParams() {
@@ -27,6 +27,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   ].slice(0, 4);
 
   const schools = event.audience === "external" ? await searchSchools("", 200) : [];
+  const gallery = event.id ? await getEventPhotos(event.id) : [];
 
-  return <EventDetail event={event} related={related} schools={schools} />;
+  return <EventDetail event={event} related={related} schools={schools} gallery={gallery} />;
 }

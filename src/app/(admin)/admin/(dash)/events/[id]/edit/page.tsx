@@ -1,19 +1,25 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
-import { requireAdmin, listOrganizers, getEvent, getAttendees } from "@/lib/admin/db";
+import { requireAdmin, listOrganizers, getEvent, getAttendees, getPhotos, photoUrl } from "@/lib/admin/db";
 import EventForm from "../../EventForm";
 import SendCertsButton from "../SendCertsButton";
+import PhotoManager from "../../../photos/PhotoManager";
+import { clearEventBanner } from "../../../photos/actions";
 
 export const metadata = { title: "Edit" };
 
 export default async function EditEvent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { sb } = await requireAdmin();
-  const [organizers, event, attendees] = await Promise.all([
+  const [organizers, event, attendees, allPhotos] = await Promise.all([
     listOrganizers(sb),
     getEvent(sb, id),
     getAttendees(sb, id),
+    getPhotos(sb),
   ]);
   if (!event) notFound();
+  const photos = allPhotos.filter((p) => p.event_id === id);
+  const bannerUrl = photoUrl(event.banner_path);
 
   // eslint-disable-next-line react-hooks/purity
   const ended = new Date(event.ends_at).getTime() < Date.now();
@@ -26,6 +32,33 @@ export default async function EditEvent({ params }: { params: Promise<{ id: stri
       </div>
 
       <EventForm organizers={organizers} event={event} />
+
+      {/* Media: banner + gallery */}
+      <section className="border-t border-[var(--glass-border)] pt-10">
+        <h2 className="font-display text-2xl font-bold tracking-[-0.01em] text-[var(--text-primary)]">Media</h2>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">The banner is the event&apos;s hero image; gallery photos appear below it on the public page. Upload below, then use ★ to set a banner.</p>
+
+        <div className="mt-5">
+          <p className="mb-2 text-sm font-medium text-[var(--text-secondary)]">Banner</p>
+          {bannerUrl ? (
+            <div className="relative max-w-md overflow-hidden rounded-[var(--r-lg)] border border-[var(--glass-border)]">
+              <Image src={bannerUrl} alt="" width={640} height={360} className="aspect-[16/9] w-full object-cover" />
+              <form action={clearEventBanner.bind(null, event.id)} className="absolute right-2 top-2">
+                <button className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[var(--danger)] shadow">Clear</button>
+              </form>
+            </div>
+          ) : (
+            <p className="max-w-md rounded-[var(--r-lg)] border border-dashed border-[var(--glass-border)] p-6 text-center text-sm text-[var(--text-tertiary)]">
+              No banner set — upload a photo and click ★ to make it the banner.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-8">
+          <p className="mb-3 text-sm font-medium text-[var(--text-secondary)]">Gallery</p>
+          <PhotoManager events={[{ id: event.id, title: event.title }]} photos={photos} lockedEventId={event.id} />
+        </div>
+      </section>
 
       {/* Registrants + certificate sending */}
       <section className="border-t border-[var(--glass-border)] pt-10">

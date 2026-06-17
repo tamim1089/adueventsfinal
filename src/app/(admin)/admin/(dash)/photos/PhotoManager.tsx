@@ -36,10 +36,10 @@ const ASPECTS: { label: string; value: number | undefined }[] = [
   { label: "Free", value: undefined },
 ];
 
-export default function PhotoManager({ events, photos }: { events: Ev[]; photos: Photo[] }) {
+export default function PhotoManager({ events, photos, lockedEventId }: { events: Ev[]; photos: Photo[]; lockedEventId?: string }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [target, setTarget] = useState(events[0]?.id ?? "");
+  const [target, setTarget] = useState(lockedEventId ?? events[0]?.id ?? "");
   const [src, setSrc] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -96,10 +96,14 @@ export default function PhotoManager({ events, photos }: { events: Ev[]; photos:
     <div className="space-y-10">
       {/* upload bar */}
       <div className="flex flex-wrap items-center gap-3 rounded-[var(--r-xl)] border border-[var(--glass-border)] bg-[var(--bg-subtle)] p-4">
-        <span className="text-sm font-medium text-[var(--text-secondary)]">Upload to</span>
-        <select value={target} onChange={(e) => setTarget(e.target.value)} className="rounded-[10px] border border-[var(--glass-border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]">
-          {events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
-        </select>
+        {!lockedEventId && (
+          <>
+            <span className="text-sm font-medium text-[var(--text-secondary)]">Upload to</span>
+            <select value={target} onChange={(e) => setTarget(e.target.value)} className="rounded-[10px] border border-[var(--glass-border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]">
+              {events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
+            </select>
+          </>
+        )}
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickFile} />
         <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-[var(--accent-on)]" style={{ background: "var(--accent)" }}>
           <ImagePlus size={16} /> Add photo

@@ -36,6 +36,13 @@ export async function deletePhoto(id: string, path: string): Promise<void> {
   revalidatePath("/admin/photos");
 }
 
+export async function clearEventBanner(eventId: string): Promise<void> {
+  if (!(await requireUser())) return;
+  await supabaseAdmin.from("events").update({ banner_path: null }).eq("id", eventId);
+  revalidatePath("/admin/photos");
+  revalidatePath(`/admin/events/${eventId}/edit`);
+}
+
 export async function setEventBanner(eventId: string, path: string): Promise<void> {
   if (!(await requireUser())) return;
   // banners live in the posters bucket convention, but a gallery photo can be
