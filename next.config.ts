@@ -41,6 +41,10 @@ const nextConfig: NextConfig = {
       "./public/cert-templates/**",
       "./src/lib/certificates/fonts/**",
     ],
+    "/admin/events/[id]/edit": [
+      "./public/cert-templates/**",
+      "./src/lib/certificates/fonts/**",
+    ],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

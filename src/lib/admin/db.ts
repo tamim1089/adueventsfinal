@@ -86,6 +86,28 @@ export async function getOverview(sb: SB) {
   };
 }
 
+export type Attendee = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  audience: string | null;
+  uni_id: string | null;
+  position: string | null;
+  grade: string | null;
+  school: string | null;
+  registered_at: string;
+};
+
+export async function getAttendees(sb: SB, eventId: string): Promise<Attendee[]> {
+  const { data } = await sb
+    .from("attendees")
+    .select("id, full_name, email, audience, uni_id, position, grade, registered_at, schools(name)")
+    .eq("event_id", eventId)
+    .order("registered_at", { ascending: true });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((a: any) => ({ ...a, school: a.schools?.name ?? null }));
+}
+
 // Returns an overlapping published/draft event in the same venue, if any.
 export async function findConflict(
   sb: SB,
