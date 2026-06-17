@@ -4,6 +4,7 @@ import "./globals.css";
 import MotionProvider from "@/components/MotionProvider";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { Toaster } from "@/components/ui/sonner";
+import SmoothScroll from "@/components/SmoothScroll";
 
 // Serif display face — optical-sizing, editorial, "expensive". The single
 // biggest lever away from a generic sans-only look. Variable font → full
@@ -51,6 +52,7 @@ export default function RootLayout({
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}>
       <body className="min-h-full">
         <LoadingScreen />
+        <SmoothScroll />
         <MotionProvider>{children}</MotionProvider>
         <Toaster />
       </body>

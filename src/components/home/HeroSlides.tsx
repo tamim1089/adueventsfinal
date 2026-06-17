@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useScroll, useTransform, useReducedMotion, type Variants } from "framer-motion";
+import { motion, useScroll, useMotionValue, useMotionValueEvent, animate, useReducedMotion, type Variants } from "framer-motion";
 import { ArrowRight, Clock, MapPin } from "lucide-react";
 import { EVENTS_DATA } from "@/lib/events-data";
 import { GetStartedButton } from "@/components/ui/get-started-button";
@@ -115,7 +115,18 @@ export default function HeroSlides() {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  const x = useTransform(scrollYProgress, [0, 1], ["0%", "-50%"]);
+
+  // Self-paced slide: a little scroll past the threshold triggers a calm,
+  // fixed-duration glide to the next panel — independent of how fast you scroll.
+  const x = useMotionValue("0%");
+  const slide = useRef(0);
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    const target = p >= 0.28 ? 1 : 0;
+    if (target !== slide.current) {
+      slide.current = target;
+      animate(x, target === 1 ? "-50%" : "0%", { duration: 1, ease: [0.22, 0.61, 0.36, 1] });
+    }
+  });
 
   // Reduced motion / no hijack: stack the two panels vertically.
   if (reduce) {
