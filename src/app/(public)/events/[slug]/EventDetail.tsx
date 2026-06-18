@@ -4,10 +4,11 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Clock, MapPin, Users, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, MapPin, Users, X, ChevronLeft, ChevronRight, PencilLine, ImagePlus } from "lucide-react";
 import type { EventItem } from "@/lib/events-data";
 import type { School } from "@/lib/schools-data";
 import type { GalleryPhoto } from "@/lib/data";
+import { useIsOrganizer } from "@/lib/useViewer";
 import RegistrationSheet from "./RegistrationSheet";
 
 type DetailEvent = EventItem & { id?: string; audience?: "uni" | "external"; bannerUrl?: string | null };
@@ -56,6 +57,7 @@ export default function EventDetail({
   gallery?: GalleryPhoto[];
 }) {
   const reduce = useReducedMotion();
+  const isOrganizer = useIsOrganizer();
   const [lightbox, setLightbox] = useState<number | null>(null);
 
   return (
@@ -74,6 +76,17 @@ export default function EventDetail({
         >
           <ArrowLeft size={16} /> All events
         </Link>
+
+        {isOrganizer && event.id && (
+          <div className="absolute right-[clamp(1.25rem,4vw,5rem)] top-20 z-10 flex flex-wrap items-center gap-2">
+            <Link href={`/admin/events/${event.id}/edit`} className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/30 px-4 py-2 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-black/50">
+              <PencilLine size={15} /> Edit event
+            </Link>
+            <Link href={`/admin/events/${event.id}/edit`} className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-[var(--accent-on)] transition-transform active:scale-[0.97]" style={{ background: "var(--accent)" }}>
+              <ImagePlus size={15} /> Add media
+            </Link>
+          </div>
+        )}
 
         <div className={`relative z-10 pb-12 ${EDGE}`}>
           <p className="text-sm font-medium text-[var(--accent)]">
