@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Mail, Phone, Building2, Building, GraduationCap, Check, Send, X, type LucideIcon } from "lucide-react";
+import { Mail, Phone, Building2, Building, GraduationCap, Check, Send, X, Copy, type LucideIcon } from "lucide-react";
 import { type Partner, type PartnerCategory, SHOW_FULL_SCHOOLS } from "@/lib/partnerships-data";
 import { useIsOrganizer } from "@/lib/useViewer";
 
@@ -86,6 +86,7 @@ function Tile({
 export default function PartnerDirectory({ partners }: { partners: Partner[] }) {
   const isOrganizer = useIsOrganizer();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [copied, setCopied] = useState(false);
 
   const visible = SHOW_FULL_SCHOOLS ? partners : partners.filter((p) => !(p.category === "school" && !p.mou));
   const emailable = useMemo(() => visible.filter((p) => firstEmail(p)), [visible]);
@@ -108,16 +109,29 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
       return n;
     });
 
+  function selectedEmails() {
+    return Array.from(new Set(emailable.filter((p) => selected.has(p.id)).map((p) => firstEmail(p)!).filter(Boolean)));
+  }
+
   function sendEmail() {
-    const emails = Array.from(
-      new Set(emailable.filter((p) => selected.has(p.id)).map((p) => firstEmail(p)!).filter(Boolean))
-    );
+    const emails = selectedEmails();
     if (emails.length === 0) return;
     const subject = encodeURIComponent("Abu Dhabi University — Al Ain Campus");
     const body = encodeURIComponent("Dear partner,\n\n\n\nBest regards,\nAbu Dhabi University — Al Ain Campus");
-    // Outlook on the web — recipients in BCC (keeps the list private for a group send)
-    const url = `https://outlook.office.com/mail/deeplink/compose?bcc=${encodeURIComponent(emails.join(";"))}&subject=${subject}&body=${body}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    // Outlook web deeplink only fills `to`, comma-separated (it ignores bcc/cc).
+    const to = emails.map(encodeURIComponent).join(",");
+    const url = `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${subject}&body=${body}`;
+    // open a sized compose popup, not the full-screen mailbox tab
+    const w = 760, h = 880;
+    const left = Math.max(0, (window.screen.width - w) / 2);
+    const top = Math.max(0, (window.screen.height - h) / 2);
+    window.open(url, "adu-compose", `width=${w},height=${h},left=${left},top=${top}`);
+  }
+
+  async function copyEmails() {
+    const emails = selectedEmails();
+    if (emails.length === 0) return;
+    try { await navigator.clipboard.writeText(emails.join(", ")); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {}
   }
 
   return (
@@ -133,6 +147,11 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
               <button onClick={selectAll} className="rounded-full border border-[var(--glass-border)] px-3.5 py-1.5 text-xs font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent)]">Select all</button>
               {selected.size > 0 && (
                 <button onClick={clear} className="inline-flex items-center gap-1 rounded-full border border-[var(--glass-border)] px-3.5 py-1.5 text-xs font-medium text-[var(--text-secondary)]"><X size={12} /> Clear</button>
+              )}
+              {selected.size > 0 && (
+                <button onClick={copyEmails} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--glass-border)] px-3.5 py-1.5 text-xs font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent)]">
+                  <Copy size={12} /> {copied ? "Copied!" : "Copy emails"}
+                </button>
               )}
               <button onClick={sendEmail} disabled={selected.size === 0} className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold text-[var(--accent-on)] transition-transform active:scale-[0.97] disabled:opacity-50" style={{ background: "var(--accent)" }}>
                 <Send size={13} /> Email {selected.size > 0 ? `(${selected.size})` : ""}
