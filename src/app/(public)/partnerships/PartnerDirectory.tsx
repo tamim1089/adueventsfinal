@@ -43,18 +43,19 @@ function Tile({
 
   return (
     <div
-      className={`relative flex flex-col items-center gap-3 border bg-[var(--bg-base)] p-5 text-center transition-colors ${selected ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "card-hover border-[var(--glass-border)]"}`}
+      onClick={canSelect ? onToggle : undefined}
+      role={canSelect ? "button" : undefined}
+      aria-pressed={canSelect ? selected : undefined}
+      className={`relative flex flex-col items-center gap-3 border bg-[var(--bg-base)] p-5 text-center transition-colors ${canSelect ? "cursor-pointer" : ""} ${selected ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "card-hover border-[var(--glass-border)]"}`}
       style={{ borderRadius: "var(--r-lg)" }}
     >
       {canSelect && (
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={selected ? "Deselect" : "Select for email"}
-          className={`absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full border transition-colors ${selected ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--glass-border)] bg-[var(--bg-base)] text-transparent hover:border-[var(--accent)]"}`}
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full border transition-colors ${selected ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--glass-border)] bg-[var(--bg-base)] text-transparent"}`}
         >
           <Check size={13} strokeWidth={3} />
-        </button>
+        </span>
       )}
 
       {noIcon ? (
@@ -68,12 +69,12 @@ function Tile({
 
       <div className="mt-auto w-full space-y-1 pt-1">
         {email && (
-          <a href={`mailto:${email}`} className="flex items-center justify-center gap-1.5 text-[0.7rem] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]">
+          <a href={`mailto:${email}`} onClick={(e) => e.stopPropagation()} className="flex items-center justify-center gap-1.5 text-[0.7rem] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]">
             <Mail size={11} className="shrink-0" /> <span className="truncate">{email}</span>
           </a>
         )}
         {phone && (
-          <a href={`tel:${phone.replace(/\s/g, "")}`} className="flex items-center justify-center gap-1.5 text-[0.7rem] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]">
+          <a href={`tel:${phone.replace(/\s/g, "")}`} onClick={(e) => e.stopPropagation()} className="flex items-center justify-center gap-1.5 text-[0.7rem] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]">
             <Phone size={11} className="shrink-0" /> {phone}
           </a>
         )}
@@ -97,6 +98,15 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
     });
   const selectAll = () => setSelected(new Set(emailable.map((p) => p.id)));
   const clear = () => setSelected(new Set());
+  const setCategory = (items: Partner[], on: boolean) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      items.forEach((p) => {
+        if (!firstEmail(p)) return;
+        if (on) n.add(p.id); else n.delete(p.id);
+      });
+      return n;
+    });
 
   function sendEmail() {
     const emails = Array.from(
@@ -138,15 +148,29 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
           .sort((a, b) => (domainOf(b) ? 1 : 0) - (domainOf(a) ? 1 : 0) || a.name.localeCompare(b.name));
         if (items.length === 0) return null;
         const Icon = g.icon;
+        const groupEmailable = items.filter((p) => firstEmail(p));
+        const allSel = groupEmailable.length > 0 && groupEmailable.every((p) => selected.has(p.id));
         return (
           <section key={g.key} className="border-b border-[var(--glass-border)] bg-[var(--bg-base)] even:bg-[var(--bg-subtle)]">
             <div className={`py-16 sm:py-20 ${EDGE}`}>
-              <p className="text-sm font-medium text-[var(--text-tertiary)]">{g.n} — {g.title}</p>
-              <h2 className="mt-3 flex items-center gap-3 font-display text-[clamp(1.75rem,3.5vw,2.75rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">
-                <Icon size={26} strokeWidth={1.75} className="text-[var(--accent)]" />
-                {g.title}
-                <span className="text-base font-normal text-[var(--text-tertiary)]">· {items.length}</span>
-              </h2>
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-[var(--text-tertiary)]">{g.n} — {g.title}</p>
+                  <h2 className="mt-3 flex items-center gap-3 font-display text-[clamp(1.75rem,3.5vw,2.75rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">
+                    <Icon size={26} strokeWidth={1.75} className="text-[var(--accent)]" />
+                    {g.title}
+                    <span className="text-base font-normal text-[var(--text-tertiary)]">· {items.length}</span>
+                  </h2>
+                </div>
+                {isOrganizer && groupEmailable.length > 0 && (
+                  <button
+                    onClick={() => setCategory(groupEmailable, !allSel)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${allSel ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--glass-border)] text-[var(--text-primary)] hover:border-[var(--accent)]"}`}
+                  >
+                    <Check size={14} /> {allSel ? `Deselect ${g.title}` : `Select all ${g.title}`} ({groupEmailable.length})
+                  </button>
+                )}
+              </div>
               <div className="mt-8 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))" }}>
                 {items.map((p) => (
                   <Tile key={p.id} partner={p} selectable={isOrganizer} selected={selected.has(p.id)} onToggle={() => toggle(p.id)} />
