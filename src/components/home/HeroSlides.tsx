@@ -76,41 +76,96 @@ function HeroPanel({ reduce }: { reduce: boolean | null }) {
   );
 }
 
-/* ---------- Slide 2: live events (was a separate section) ---------- */
+/* ---------- Slide 2: live events ---------- */
 function LivePanel() {
   return (
-    <section className={`relative flex h-[100svh] w-full flex-col justify-center overflow-hidden bg-[var(--bg-base)] ${EDGE}`}>
+    <section className="relative flex h-[100svh] w-full flex-col justify-center overflow-hidden bg-[var(--bg-base)]">
+      {/* subtle decorative dots — desktop only */}
       <span className="pointer-events-none absolute -left-24 top-1/4 hidden h-80 w-80 rounded-full border border-[var(--glass-border)] lg:block" aria-hidden="true" />
       <span className="pointer-events-none absolute right-16 top-24 hidden h-2.5 w-2.5 rounded-full lg:block" style={{ background: "var(--accent)" }} aria-hidden="true" />
 
-      <div className="relative">
-        <p className="text-sm font-medium text-[var(--accent)]">Fig. 01 — What&apos;s on</p>
-        <h2 className="mt-3 max-w-3xl font-display text-[clamp(2.5rem,6vw,5rem)] font-bold leading-[0.98] tracking-[-0.03em] text-[var(--text-primary)]">Live across every campus.</h2>
-        <p className="mt-4 max-w-lg text-lg leading-relaxed text-[var(--text-secondary)]">The day&apos;s events, the moment they go live — across every college, department, and center.</p>
+      {/* heading — uses edge padding so text aligns with nav */}
+      <div className={`relative ${EDGE}`}>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] sm:text-sm">Fig. 01 — What&apos;s on</p>
+        <h2 className="mt-2 font-display text-[clamp(1.85rem,5vw,5rem)] font-bold leading-[0.96] tracking-[-0.03em] text-[var(--text-primary)] sm:mt-3">
+          Live across<br className="sm:hidden" /> every campus.
+        </h2>
+        <p className="mt-2 max-w-lg text-sm leading-relaxed text-[var(--text-secondary)] sm:mt-4 sm:text-lg">
+          The day&apos;s events, the moment they go live — across every college, department, and center.
+        </p>
+      </div>
 
-        <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {/* ── MOBILE: horizontal snap-scroll strip ── */}
+      <div className="mt-5 sm:hidden">
+        <div
+          className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2"
+          style={{ paddingLeft: "clamp(1.25rem,4vw,5rem)", paddingRight: "clamp(1.25rem,4vw,5rem)", scrollbarWidth: "none" }}
+        >
           {UPCOMING.slice(0, 3).map((e) => {
             const live = e.when.startsWith("Today");
             return (
-              <Link key={e.slug} href={`/events/${e.slug}`} className="faux-glass card-hover group flex flex-col overflow-hidden">
-                <div className="relative aspect-[16/10] w-full overflow-hidden">
-                  <Image src={e.image} alt="" fill sizes="360px" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-                  {live && <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white" style={{ background: "var(--accent)" }}><span className="h-1.5 w-1.5 rounded-full bg-white" /> Live</span>}
+              <Link
+                key={e.slug}
+                href={`/events/${e.slug}`}
+                className="faux-glass card-hover group flex w-[76vw] shrink-0 snap-start flex-col overflow-hidden"
+              >
+                <div className="relative aspect-[4/3] w-full overflow-hidden">
+                  <Image src={e.image} alt="" fill sizes="76vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                  {live && (
+                    <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white" style={{ background: "var(--accent)" }}>
+                      <span className="h-1.5 w-1.5 rounded-full bg-white" /> Live
+                    </span>
+                  )}
                 </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <span className="text-xs font-medium text-[var(--text-tertiary)]">{e.organizer}</span>
-                  <h3 className="mt-2 font-display text-xl font-semibold leading-tight text-[var(--text-primary)]">{e.title}</h3>
-                  <div className="mt-auto flex items-center gap-4 pt-4 text-xs text-[var(--text-secondary)]">
-                    <span className="inline-flex items-center gap-1.5"><Clock size={13} className="text-[var(--text-tertiary)]" /> {e.when}</span>
-                    <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-[var(--text-tertiary)]" /> {e.venue}</span>
+                <div className="flex flex-1 flex-col p-4">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">{e.organizer}</span>
+                  <h3 className="mt-1.5 font-display text-base font-semibold leading-tight text-[var(--text-primary)]">{e.title}</h3>
+                  <div className="mt-auto flex flex-wrap items-center gap-3 pt-3 text-[11px] text-[var(--text-secondary)]">
+                    <span className="inline-flex items-center gap-1"><Clock size={11} className="text-[var(--text-tertiary)]" /> {e.when}</span>
+                    <span className="inline-flex items-center gap-1"><MapPin size={11} className="text-[var(--text-tertiary)]" /> {e.venue}</span>
                   </div>
                 </div>
               </Link>
             );
           })}
         </div>
+        {/* scroll hint dots */}
+        <div className="mt-3 flex items-center justify-center gap-1.5 px-[clamp(1.25rem,4vw,5rem)]">
+          {UPCOMING.slice(0, 3).map((_, i) => (
+            <span key={i} className={`h-1.5 rounded-full transition-all ${i === 0 ? "w-4 bg-[var(--accent)]" : "w-1.5 bg-[var(--glass-border)]"}`} />
+          ))}
+        </div>
+      </div>
 
-        <Link href="/events" className="mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-[var(--accent-on)] transition-transform hover:-translate-y-0.5 active:scale-[0.98]" style={{ background: "var(--accent)" }}>
+      {/* ── DESKTOP: 3-column grid ── */}
+      <div className={`mt-9 hidden gap-5 sm:grid sm:grid-cols-2 lg:grid-cols-3 ${EDGE}`}>
+        {UPCOMING.slice(0, 3).map((e) => {
+          const live = e.when.startsWith("Today");
+          return (
+            <Link key={e.slug} href={`/events/${e.slug}`} className="faux-glass card-hover group flex flex-col overflow-hidden">
+              <div className="relative aspect-[16/10] w-full overflow-hidden">
+                <Image src={e.image} alt="" fill sizes="360px" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                {live && (
+                  <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white" style={{ background: "var(--accent)" }}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-white" /> Live
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-1 flex-col p-5">
+                <span className="text-xs font-medium text-[var(--text-tertiary)]">{e.organizer}</span>
+                <h3 className="mt-2 font-display text-xl font-semibold leading-tight text-[var(--text-primary)]">{e.title}</h3>
+                <div className="mt-auto flex items-center gap-4 pt-4 text-xs text-[var(--text-secondary)]">
+                  <span className="inline-flex items-center gap-1.5"><Clock size={13} className="text-[var(--text-tertiary)]" /> {e.when}</span>
+                  <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-[var(--text-tertiary)]" /> {e.venue}</span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className={`mt-6 sm:mt-8 ${EDGE}`}>
+        <Link href="/events" className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-[var(--accent-on)] transition-transform hover:-translate-y-0.5 active:scale-[0.98] sm:px-7 sm:py-3.5 sm:text-base" style={{ background: "var(--accent)" }}>
           Browse all events <ArrowRight size={17} />
         </Link>
       </div>
