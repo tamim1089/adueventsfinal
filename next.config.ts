@@ -5,8 +5,7 @@ const isProd = process.env.NODE_ENV === "production";
 // Supabase host (for connect-src / img-src once configured).
 const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
-// Strict CSP in production only (dev/Turbopack needs eval). next/font
-// self-hosts fonts, so no external font domain is required.
+// Strict CSP in production only (dev/Turbopack needs eval).
 const csp = [
   `default-src 'self'`,
   `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline'`,
@@ -14,7 +13,7 @@ const csp = [
   `img-src 'self' data: blob: https://i.ytimg.com https://www.google.com https://*.gstatic.com ${supabaseHost}`.trim(),
   `media-src 'self'`,
   `font-src 'self'`,
-  `connect-src 'self' ${supabaseHost}`.trim(),
+  `connect-src 'self' ${supabaseHost} https://*.supabase.co wss://*.supabase.co`.trim(),
   `frame-src https://www.youtube-nocookie.com`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
@@ -33,7 +32,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // ── Performance: React compiler removes unnecessary re-renders ──
+  // experimental: { reactCompiler: true },  // uncomment once RC is stable
+
+  // ── Images: use AVIF (smaller) + WebP fallback, bigger cache TTL ──
   images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
     remotePatterns: [
       {
         protocol: "https",
@@ -41,9 +46,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Ensure the certificate base PDF + embedded fonts are traced into the
-  // serverless function that renders certificates (they live under public/
-  // and src/, which aren't bundled into route functions by default).
+
+  // ── Compress responses ──
+  compress: true,
+
+  // ── Ensure certificate assets are traced into serverless functions ──
   outputFileTracingIncludes: {
     "/api/certificate": [
       "./public/cert-templates/**",
@@ -54,8 +61,34 @@ const nextConfig: NextConfig = {
       "./src/lib/certificates/fonts/**",
     ],
   },
+
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+      // ── Long-lived cache for Next.js static chunks ──
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      // ── Cache public media ──
+      {
+        source: "/media/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+      {
+        source: "/brand/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+    ];
   },
 };
 
