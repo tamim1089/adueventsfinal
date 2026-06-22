@@ -65,19 +65,13 @@ export async function getEvent(sb: SB, id: string): Promise<AdminEvent | null> {
 }
 
 export async function getOverview(sb: SB) {
-  const nowIso = new Date().toISOString();
   const count = (q: PromiseLike<{ count: number | null }>) => q.then((r) => r.count ?? 0);
-  const [published, certificates, surveyResponses] = await Promise.all([
+  const [published, certificates, surveyResponses, registrations] = await Promise.all([
     count(sb.from("events").select("id", { count: "exact", head: true }).eq("status", "published")),
     count(sb.from("certificates").select("id", { count: "exact", head: true })),
     count(sb.from("survey_responses").select("id", { count: "exact", head: true })),
+    count(sb.from("attendees").select("id", { count: "exact", head: true })),
   ]);
-  const { count: liveNow } = await sb
-    .from("events")
-    .select("id", { count: "exact", head: true })
-    .lte("starts_at", nowIso)
-    .gte("ends_at", nowIso)
-    .eq("status", "published");
   const { data: recent } = await sb
     .from("events")
     .select("id, title, slug, starts_at, status, organizers(name)")
@@ -85,7 +79,7 @@ export async function getOverview(sb: SB) {
     .limit(6);
   return {
     published,
-    liveNow: liveNow ?? 0,
+    registrations,
     certificates,
     surveyResponses,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

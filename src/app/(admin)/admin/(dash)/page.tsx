@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarDays, Radio, BadgeCheck, MessageSquareText, Plus, ArrowUpRight, Clock, Users, Images, FileBarChart } from "lucide-react";
+import { CalendarDays, Users, BadgeCheck, MessageSquareText, Plus, ArrowUpRight, Clock, Images, FileBarChart } from "lucide-react";
 import { requireAdmin, getOverview } from "@/lib/admin/db";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -20,8 +20,8 @@ export default async function Overview() {
 
   const KPIS = [
     { icon: CalendarDays, value: o.published, label: "Published events" },
-    { icon: Radio, value: o.liveNow, label: "Live now" },
-    { icon: BadgeCheck, value: o.certificates, label: "Certificates" },
+    { icon: Users, value: o.registrations, label: "Total registrations" },
+    { icon: BadgeCheck, value: o.certificates, label: "Certificates sent" },
     { icon: MessageSquareText, value: o.surveyResponses, label: "Survey responses" },
   ];
 
