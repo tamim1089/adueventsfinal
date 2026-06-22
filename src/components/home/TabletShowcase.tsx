@@ -108,29 +108,36 @@ export default function TabletShowcase() {
     offset: ["start end", "center center"],
   });
 
-  // Tilt back → lay flat as it enters; grow into place. Mirrors the old
-  // "iPad screen" reveal, kept restrained and hairline-clean.
   const rotate = useTransform(scrollYProgress, [0, 1], [24, 0]);
   const scale = useTransform(scrollYProgress, [0, 1], [0.86, 1]);
 
   return (
     <section className="relative overflow-hidden border-b border-[var(--glass-border)] bg-[var(--bg-base)] py-20 sm:py-28">
-      {/* editorial shapes */}
+      {/* editorial shapes — desktop only */}
       <span className="pointer-events-none absolute left-[8%] top-24 hidden h-40 w-40 rounded-full border border-[var(--glass-border)] lg:block" aria-hidden="true" />
       <span className="pointer-events-none absolute right-[12%] top-40 hidden h-2.5 w-2.5 rounded-full lg:block" style={{ background: "var(--accent)" }} aria-hidden="true" />
 
       <div className={`relative ${EDGE}`}>
-        <p className="text-sm font-medium text-[var(--accent)]">
-          For everyone at ADU
-        </p>
+        <p className="text-sm font-medium text-[var(--accent)]">For everyone at ADU</p>
         <h2 className="mt-3 max-w-3xl font-display text-[clamp(2rem,5vw,4rem)] font-bold leading-[1.0] tracking-[-0.02em] text-[var(--text-primary)]">
-          Everything at ADU,
-          <br />
-          in one place.
+          Everything at ADU,<br />in one place.
         </h2>
       </div>
 
-      <div ref={ref} className="mt-14 flex justify-center px-4" style={{ perspective: "1400px" }}>
+      {/* ── MOBILE: portrait phone frame — fits perfectly in any mobile viewport ── */}
+      <div className="mt-10 flex justify-center px-6 md:hidden">
+        <div
+          className="w-full max-w-[260px] overflow-hidden border-[5px] border-[var(--text-primary)] bg-[var(--text-primary)] shadow-2xl"
+          style={{ borderRadius: 30, aspectRatio: "9 / 17" }}
+        >
+          <div className="h-full w-full overflow-hidden" style={{ borderRadius: 24 }}>
+            <DashboardMock />
+          </div>
+        </div>
+      </div>
+
+      {/* ── TABLET / DESKTOP: landscape tablet with tilt-in animation ── */}
+      <div ref={ref} className="mt-14 hidden justify-center px-4 md:flex" style={{ perspective: "1400px" }}>
         <motion.div
           style={reduce ? undefined : { rotateX: rotate, scale, transformOrigin: "center top" }}
           className="w-full max-w-5xl"
