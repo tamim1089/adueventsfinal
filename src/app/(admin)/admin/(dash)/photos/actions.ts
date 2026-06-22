@@ -48,6 +48,39 @@ export async function setEventBanner(eventId: string, path: string): Promise<voi
   // banners live in the posters bucket convention, but a gallery photo can be
   // promoted: store its public photos path on the event.
   await supabaseAdmin.from("events").update({ banner_path: path }).eq("id", eventId);
+
+  // Fetch the event slug so we can revalidate the public detail page.
+  const { data: ev } = await supabaseAdmin.from("events").select("slug").eq("id", eventId).maybeSingle();
+
   revalidatePath("/admin/photos");
   revalidatePath("/admin/events");
+  revalidatePath(`/admin/events/${eventId}/edit`);
+  revalidatePath("/events");
+  if (ev?.slug) revalidatePath(`/events/${ev.slug}`);
+}
+
+export async function uploadBanner(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  if (!(await requireUser())) return { ok: false, error: "Not signed in." };
+  const eventId = String(formData.get("eventId") || "");
+  const file = formData.get("file") as File | null;
+  if (!eventId) return { ok: false, error: "Missing eventId." };
+  if (!file) return { ok: false, error: "No image." };
+
+  const buf = Buffer.from(await file.arrayBuffer());
+  const path = `${eventId}/${randomUUID()}.jpg`;
+  const up = await supabaseAdmin.storage.from("photos").upload(path, buf, { contentType: "image/jpeg", upsert: false });
+  if (up.error) return { ok: false, error: up.error.message };
+
+  const upd = await supabaseAdmin.from("events").update({ banner_path: path }).eq("id", eventId);
+  if (upd.error) return { ok: false, error: upd.error.message };
+
+  const { data: ev } = await supabaseAdmin.from("events").select("slug").eq("id", eventId).maybeSingle();
+
+  revalidatePath("/admin/photos");
+  revalidatePath("/admin/events");
+  revalidatePath(`/admin/events/${eventId}/edit`);
+  revalidatePath("/events");
+  if (ev?.slug) revalidatePath(`/events/${ev.slug}`);
+
+  return { ok: true };
 }

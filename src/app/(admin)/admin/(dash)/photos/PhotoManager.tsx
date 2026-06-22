@@ -36,7 +36,7 @@ const ASPECTS: { label: string; value: number | undefined }[] = [
   { label: "Free", value: undefined },
 ];
 
-export default function PhotoManager({ events, photos, lockedEventId }: { events: Ev[]; photos: Photo[]; lockedEventId?: string }) {
+export default function PhotoManager({ events, photos, lockedEventId, hideBannerControls }: { events: Ev[]; photos: Photo[]; lockedEventId?: string; hideBannerControls?: boolean }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [target, setTarget] = useState(lockedEventId ?? events[0]?.id ?? "");
@@ -126,8 +126,10 @@ export default function PhotoManager({ events, photos, lockedEventId }: { events
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.url} alt={p.caption ?? ""} className="h-full w-full object-cover" loading="lazy" />
                   <div className="absolute inset-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button onClick={() => makeBanner(p)} title="Set as event banner" className="rounded-full bg-white/90 p-2 text-[var(--text-primary)] hover:text-[var(--accent)]"><Star size={14} /></button>
-                    <button onClick={() => remove(p)} title="Delete" className="rounded-full bg-white/90 p-2 text-[var(--danger)]"><Trash2 size={14} /></button>
+                    {!hideBannerControls && (
+                      <button onClick={() => makeBanner(p)} title="Set as event banner" className="rounded-full bg-white/90 p-2 text-[var(--text-primary)] hover:text-[var(--accent)]"><Star size={14} /></button>
+                    )}
+                    <button onClick={() => remove(p)} title="Delete" className={`rounded-full bg-white/90 p-2 text-[var(--danger)] ${hideBannerControls ? "ml-auto" : ""}`}><Trash2 size={14} /></button>
                   </div>
                 </div>
               ))}

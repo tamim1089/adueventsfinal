@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { Clock, MapPin, Users, ArrowRight, Radio, CalendarDays } from "lucide-react";
 import { EVENTS_DATA, type EventItem } from "@/lib/events-data";
+import type { Event as LiveEvent } from "@/lib/data";
 import { ActionSearchBar, type Action } from "@/components/ui/action-search-bar";
 
 // Flat list across upcoming + past, for the quick-jump search.
@@ -28,10 +29,13 @@ const EASE = [0.2, 0.8, 0.2, 1] as const;
 
 type Tab = "upcoming" | "past";
 
-/* ---- editorial event card (matches the home live strip) -------- */
-function EventCard({ event, index }: { event: EventItem; index: number }) {
+/* ---- editorial event card ------------------------------------------------ */
+type AnyEvent = EventItem & { bannerUrl?: string | null };
+
+function EventCard({ event, index }: { event: AnyEvent; index: number }) {
   const reduce = useReducedMotion();
   const live = event.when.startsWith("Today");
+  const thumb = (event.bannerUrl) || event.image;
   return (
     <motion.div
       layout
@@ -45,7 +49,7 @@ function EventCard({ event, index }: { event: EventItem; index: number }) {
       >
         <div className="relative aspect-[16/10] w-full overflow-hidden">
           <Image
-            src={event.image}
+            src={thumb}
             alt=""
             fill
             sizes="(min-width: 1024px) 360px, 100vw"
@@ -86,12 +90,25 @@ function EventCard({ event, index }: { event: EventItem; index: number }) {
   );
 }
 
-export default function EventsBrowser() {
+export default function EventsBrowser({
+  initialUpcoming,
+  initialPast,
+}: {
+  initialUpcoming?: LiveEvent[];
+  initialPast?: LiveEvent[];
+}) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("upcoming");
   const [filter, setFilter] = useState<string>("all");
 
-  const tabEvents = EVENTS_DATA[tab];
+  // Use live DB events if provided, otherwise fall back to static seed
+  const liveUpcoming = initialUpcoming && initialUpcoming.length > 0 ? initialUpcoming : EVENTS_DATA.upcoming;
+  const livePast = initialPast && initialPast.length > 0 ? initialPast : EVENTS_DATA.past;
+
+  // If upcoming is empty, auto-show past so users don't see a blank page
+  const effectiveTab = tab === "upcoming" && liveUpcoming.length === 0 ? "past" : tab;
+
+  const tabEvents: AnyEvent[] = effectiveTab === "upcoming" ? liveUpcoming : livePast;
   const organizers = Array.from(new Set(tabEvents.map((e) => e.organizer)));
 
   const filtered = tabEvents.filter((e) => {
@@ -100,7 +117,7 @@ export default function EventsBrowser() {
     return e.organizer === filter;
   });
 
-  const showFeatured = tab === "upcoming" && filter === "all" && filtered.length > 0;
+  const showFeatured = effectiveTab === "upcoming" && filter === "all" && filtered.length > 0;
   const featured = showFeatured ? filtered[0] : null;
   const gridEvents = showFeatured ? filtered.slice(1) : filtered;
 
@@ -190,50 +207,48 @@ export default function EventsBrowser() {
 
         {/* content */}
         <div>
-          {/* featured split */}
+          {/* featured split — fully clickable */}
           {featured && (
-            <motion.div
-              layout
-              initial={false}
-              className="faux-glass mb-8 grid grid-cols-1 overflow-hidden md:grid-cols-2"
-            >
-              <div className="relative min-h-[220px] md:min-h-[340px]">
-                <Image
-                  src={featured.image}
-                  alt=""
-                  fill
-                  sizes="(min-width: 768px) 50vw, 100vw"
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex flex-col justify-center p-7 sm:p-9">
-                <p className="text-sm font-medium text-[var(--accent)]">
-                  Featured · {featured.organizer}
-                </p>
-                <h2 className="mt-3 font-display text-[clamp(1.75rem,3vw,2.5rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--text-primary)]">
-                  {featured.title}
-                </h2>
-                <p className="mt-3 max-w-md leading-relaxed text-[var(--text-secondary)]">
-                  {featured.overview}
-                </p>
-                <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--glass-border)] pt-5 font-mono text-[0.75rem] tabular-nums text-[var(--text-secondary)]">
-                  <span className="inline-flex items-center gap-2">
-                    <Clock size={14} className="text-[var(--text-tertiary)]" /> {featured.when}
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <MapPin size={14} className="text-[var(--text-tertiary)]" /> {featured.venue}
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <Users size={14} className="text-[var(--text-tertiary)]" /> {featured.attending} attending
+            <motion.div layout initial={false} className="mb-8">
+              <Link
+                href={`/events/${featured.slug}`}
+                className="faux-glass card-hover group grid grid-cols-1 overflow-hidden md:grid-cols-2"
+              >
+                <div className="relative min-h-[220px] md:min-h-[340px]">
+                  <Image
+                    src={(featured as AnyEvent).bannerUrl || featured.image}
+                    alt=""
+                    fill
+                    sizes="(min-width: 768px) 50vw, 100vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  />
+                </div>
+                <div className="flex flex-col justify-center p-7 sm:p-9">
+                  <p className="text-sm font-medium text-[var(--accent)]">
+                    Featured · {featured.organizer}
+                  </p>
+                  <h2 className="mt-3 font-display text-[clamp(1.75rem,3vw,2.5rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[var(--text-primary)]">
+                    {featured.title}
+                  </h2>
+                  <p className="mt-3 max-w-md leading-relaxed text-[var(--text-secondary)]">
+                    {featured.overview}
+                  </p>
+                  <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--glass-border)] pt-5 font-mono text-[0.75rem] tabular-nums text-[var(--text-secondary)]">
+                    <span className="inline-flex items-center gap-2">
+                      <Clock size={14} className="text-[var(--text-tertiary)]" /> {featured.when}
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <MapPin size={14} className="text-[var(--text-tertiary)]" /> {featured.venue}
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <Users size={14} className="text-[var(--text-tertiary)]" /> {featured.attending} attending
+                    </span>
+                  </div>
+                  <span className="mt-6 inline-flex w-fit items-center gap-2 font-semibold text-[var(--accent)] transition-transform group-hover:translate-x-1">
+                    View full details <ArrowRight size={17} />
                   </span>
                 </div>
-                <Link
-                  href={`/events/${featured.slug}`}
-                  className="mt-6 inline-flex w-fit items-center gap-2 font-semibold text-[var(--accent)] transition-transform hover:translate-x-0.5"
-                >
-                  View full details <ArrowRight size={17} />
-                </Link>
-              </div>
+              </Link>
             </motion.div>
           )}
 

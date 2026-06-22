@@ -10,6 +10,9 @@ const HOUR_END = 23; // 11 PM
 const HOURS = HOUR_END - HOUR_START;
 const ROW_H = 52; // px per hour
 
+// Abu Dhabi / UAE timezone offset in minutes (UTC+4, no DST)
+const TZ_OFFSET_MIN = 4 * 60;
+
 const PALETTE = [
   { bg: "#fde8ea", bar: "#e11d2e", tx: "#7f1420" },
   { bg: "#e7eefc", bar: "#3b6fe0", tx: "#1e3a8a" },
@@ -29,12 +32,19 @@ const hourLabel = (h: number) => {
   return `${v} ${am ? "AM" : "PM"}`;
 };
 
+/** Returns the current date/time expressed in Asia/Dubai local time (UTC+4). */
+function nowInDubai(): Date {
+  const utcMs = Date.now();
+  return new Date(utcMs + TZ_OFFSET_MIN * 60 * 1000);
+}
+
 export default async function Calendar({ searchParams }: { searchParams: Promise<{ o?: string }> }) {
   const { sb } = await requireAdmin();
   const { o } = await searchParams;
   const offset = Number.parseInt(o ?? "0") || 0;
 
-  const base = new Date();
+  // Compute week boundaries in Dubai local time, then convert back to UTC ISO strings for the query.
+  const base = nowInDubai();
   base.setHours(0, 0, 0, 0);
   const dow = (base.getDay() + 6) % 7;
   const weekStart = new Date(base);
@@ -42,25 +52,34 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 7);
 
+  // weekStart/weekEnd are Dubai-local times stored in a JS Date whose internal UTC
+  // value is 4h ahead. Shift back by TZ_OFFSET_MIN to get the real UTC boundaries.
+  const weekStartUtc = new Date(weekStart.getTime() - TZ_OFFSET_MIN * 60 * 1000);
+  const weekEndUtc = new Date(weekEnd.getTime() - TZ_OFFSET_MIN * 60 * 1000);
+
   const { data } = await sb
     .from("events")
     .select("id, title, starts_at, ends_at, location, status, organizer_id")
-    .gte("starts_at", weekStart.toISOString())
-    .lt("starts_at", weekEnd.toISOString())
+    .gte("starts_at", weekStartUtc.toISOString())
+    .lt("starts_at", weekEndUtc.toISOString())
     .order("starts_at", { ascending: true });
   const events = data ?? [];
 
   const todayIdx = offset === 0 ? dow : -1;
-  // eslint-disable-next-line react-hooks/purity
-  const now = new Date();
-  const nowTop = ((now.getHours() * 60 + now.getMinutes()) / 60 - HOUR_START) * ROW_H;
+  // Use Dubai local time for the "now" indicator position
+  const nowDubai = nowInDubai();
+  const nowTop = ((nowDubai.getHours() * 60 + nowDubai.getMinutes()) / 60 - HOUR_START) * ROW_H;
 
   const label = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date(weekEnd.getTime() - 1).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 
   // place each event into its day column
+  // Convert event times to Dubai local time for correct column/position placement
   const placed = events.map((e) => {
-    const s = new Date(e.starts_at as string);
-    const en = new Date(e.ends_at as string);
+    const sUtc = new Date(e.starts_at as string);
+    const enUtc = new Date(e.ends_at as string);
+    // Shift to Dubai local time
+    const s = new Date(sUtc.getTime() + TZ_OFFSET_MIN * 60 * 1000);
+    const en = new Date(enUtc.getTime() + TZ_OFFSET_MIN * 60 * 1000);
     const dayIdx = (s.getDay() + 6) % 7;
     const startH = s.getHours() + s.getMinutes() / 60;
     const endH = en.getHours() + en.getMinutes() / 60;

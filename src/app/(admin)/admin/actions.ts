@@ -33,8 +33,11 @@ export async function saveEvent(input: EventInput): Promise<Result> {
   if (!input.title.trim()) return { ok: false, error: "Title is required." };
   if (!input.organizer_id) return { ok: false, error: "Pick an organizer." };
   if (!input.starts_at || !input.ends_at) return { ok: false, error: "Start and end times are required." };
-  const startsAt = new Date(input.starts_at).toISOString();
-  const endsAt = new Date(input.ends_at).toISOString();
+  // datetime-local inputs have no timezone; treat them as UAE local time (UTC+4).
+  // Appending "+04:00" ensures 09:00 local → 05:00 UTC, not 09:00 UTC.
+  const toUae = (s: string) => (s.includes("+") || s.endsWith("Z") ? s : `${s}:00+04:00`);
+  const startsAt = new Date(toUae(input.starts_at)).toISOString();
+  const endsAt = new Date(toUae(input.ends_at)).toISOString();
   if (new Date(endsAt) < new Date(startsAt)) return { ok: false, error: "End time must be after the start time." };
 
   // conflict: no overlapping event in the same venue

@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { saveEvent, type EventInput } from "@/app/(admin)/admin/actions";
 import type { AdminEvent } from "@/lib/admin/db";
 
+// datetime-local inputs have no TZ info. Events are stored as UTC but the user
+// works in UAE time (UTC+4). Shift the UTC timestamp to local before formatting.
+const UAE_OFFSET_MS = 4 * 60 * 60 * 1000;
 function toInput(iso?: string) {
   if (!iso) return "";
-  const d = new Date(iso);
+  const d = new Date(new Date(iso).getTime() + UAE_OFFSET_MS);
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
 }
 
 const labelCls = "mb-1.5 block text-sm font-medium text-[var(--text-secondary)]";

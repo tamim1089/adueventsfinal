@@ -4,7 +4,10 @@ import { requireAdmin, listOrganizers, getEvent, getAttendees, getPhotos, photoU
 import EventForm from "../../EventForm";
 import SendCertsButton from "../SendCertsButton";
 import PhotoManager from "../../../photos/PhotoManager";
+import BannerPicker from "../BannerPicker";
+import BannerUpload from "../BannerUpload";
 import { clearEventBanner } from "../../../photos/actions";
+
 
 export const metadata = { title: "Edit" };
 
@@ -33,31 +36,48 @@ export default async function EditEvent({ params }: { params: Promise<{ id: stri
 
       <EventForm organizers={organizers} event={event} />
 
-      {/* Media: banner + gallery */}
-      <section className="border-t border-[var(--glass-border)] pt-10">
-        <h2 className="font-display text-2xl font-bold tracking-[-0.01em] text-[var(--text-primary)]">Media</h2>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">The banner is the event&apos;s hero image; gallery photos appear below it on the public page. Upload below, then use ★ to set a banner.</p>
-
-        <div className="mt-5">
-          <p className="mb-2 text-sm font-medium text-[var(--text-secondary)]">Banner</p>
-          {bannerUrl ? (
-            <div className="relative max-w-md overflow-hidden rounded-[var(--r-lg)] border border-[var(--glass-border)]">
-              <Image src={bannerUrl} alt="" width={640} height={360} className="aspect-[16/9] w-full object-cover" />
-              <form action={clearEventBanner.bind(null, event.id)} className="absolute right-2 top-2">
-                <button className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[var(--danger)] shadow">Clear</button>
-              </form>
-            </div>
-          ) : (
-            <p className="max-w-md rounded-[var(--r-lg)] border border-dashed border-[var(--glass-border)] p-6 text-center text-sm text-[var(--text-tertiary)]">
-              No banner set — upload a photo and click ★ to make it the banner.
+      {/* ── Banner ────────────────────────────────────────────── */}
+      <section className="border-t border-[var(--glass-border)] pt-10 space-y-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl font-bold tracking-[-0.01em] text-[var(--text-primary)]">Banner</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              The hero image shown at the top of the public event page.
+              {photos.length > 0 ? " Or click a gallery photo below to promote it as the banner." : ""}
             </p>
-          )}
+          </div>
+          <BannerUpload eventId={event.id} />
         </div>
 
-        <div className="mt-8">
-          <p className="mb-3 text-sm font-medium text-[var(--text-secondary)]">Gallery</p>
-          <PhotoManager events={[{ id: event.id, title: event.title }]} photos={photos} lockedEventId={event.id} />
+        {/* Current banner preview */}
+        {bannerUrl ? (
+          <div className="relative max-w-2xl overflow-hidden rounded-[var(--r-lg)] border border-[var(--glass-border)]">
+            <Image src={bannerUrl} alt="" width={960} height={540} className="aspect-[16/9] w-full object-cover" />
+            <form action={clearEventBanner.bind(null, event.id)} className="absolute right-3 top-3">
+              <button className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[var(--danger)] shadow">
+                Remove banner
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="flex max-w-2xl items-center justify-center rounded-[var(--r-lg)] border border-dashed border-[var(--glass-border)] bg-[var(--bg-subtle)] py-10 text-sm text-[var(--text-tertiary)]">
+            No banner set
+          </div>
+        )}
+
+        {/* Pick from gallery photos */}
+        {photos.length > 0 && (
+          <BannerPicker photos={photos} eventId={event.id} currentBannerPath={event.banner_path ?? null} />
+        )}
+      </section>
+
+      {/* ── Gallery ───────────────────────────────────────────── */}
+      <section className="border-t border-[var(--glass-border)] pt-10 space-y-4">
+        <div>
+          <h2 className="font-display text-2xl font-bold tracking-[-0.01em] text-[var(--text-primary)]">Gallery</h2>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">Upload photos that appear in the gallery on the public event page.</p>
         </div>
+        <PhotoManager events={[{ id: event.id, title: event.title }]} photos={photos} lockedEventId={event.id} hideBannerControls />
       </section>
 
       {/* Registrants + certificate sending */}

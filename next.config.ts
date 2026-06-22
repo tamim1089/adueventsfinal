@@ -33,6 +33,14 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: new URL(supabaseHost || "https://placeholder.supabase.co").hostname,
+      },
+    ],
+  },
   // Ensure the certificate base PDF + embedded fonts are traced into the
   // serverless function that renders certificates (they live under public/
   // and src/, which aren't bundled into route functions by default).
