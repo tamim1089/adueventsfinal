@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Mail, CheckCircle2, Circle, ChevronDown, ChevronUp, Send } from "lucide-react";
-import { markCertsSent } from "./cert-actions";
+import { Mail, CheckCircle2, Circle, ChevronDown, ChevronUp, Send, Loader2 } from "lucide-react";
+import { sendCertificates } from "./cert-actions";
 
 type Attendee = {
   id: string;
@@ -51,27 +51,33 @@ export default function CertificatesClient({ events }: { events: EventGroup[] })
     }
   }
 
-  function openOutlook(eventId: string, eventTitle: string, attendees: Attendee[]) {
+  function sendViaGraph(eventId: string, eventTitle: string, attendees: Attendee[]) {
     const s = getSelected(eventId);
     if (!s.size) return;
-    const emails = attendees
+    const recipients = attendees
       .filter((a) => s.has(a.id) && a.email)
-      .map((a) => a.email!)
-      .join(";");
+      .map((a) => ({ id: a.id, full_name: a.full_name, email: a.email! }));
 
-    const subject = encodeURIComponent(`Your Certificate — ${eventTitle}`);
-    const body = encodeURIComponent(
-      `Dear attendee,\n\nThank you for participating in "${eventTitle}".\nPlease find your certificate of participation attached or download it from the event portal.\n\nBest regards,\nADU Events Team`
-    );
-    window.open(`mailto:${emails}?subject=${subject}&body=${body}`, "_blank");
-
-    // Mark as sent in DB
     startTransition(async () => {
-      const res = await markCertsSent([...s]);
+      const res = await sendCertificates(recipients, eventTitle);
       if (res.ok) {
-        setFlash((prev) => ({ ...prev, [eventId]: `Marked ${s.size} certificate${s.size > 1 ? "s" : ""} as sent` }));
+        const msg = `Sent ${res.sent ?? recipients.length} certificate${(res.sent ?? recipients.length) > 1 ? "s" : ""} ✓`;
+        setFlash((prev) => ({ ...prev, [eventId]: res.error ? `${msg} (DB warning)` : msg }));
         setSelected((prev) => ({ ...prev, [eventId]: new Set() }));
-        setTimeout(() => setFlash((prev) => { const n = { ...prev }; delete n[eventId]; return n; }), 4000);
+        setTimeout(() => setFlash((prev) => { const n = { ...prev }; delete n[eventId]; return n; }), 5000);
+      } else if (res.needsLogin) {
+        // Fallback: open mailto in batches
+        const emails = recipients.map((r) => r.email);
+        const subject = encodeURIComponent(`Your Certificate — ${eventTitle}`);
+        const body = encodeURIComponent(
+          `Dear attendee,\n\nThank you for participating in "${eventTitle}".\nPlease find your certificate of participation attached.\n\nBest regards,\nADU Events Team`
+        );
+        window.open(`mailto:${emails.join(";")}?subject=${subject}&body=${body}`, "_blank");
+        setFlash((prev) => ({ ...prev, [eventId]: "No Microsoft session — Outlook opened as fallback" }));
+        setTimeout(() => setFlash((prev) => { const n = { ...prev }; delete n[eventId]; return n; }), 6000);
+      } else {
+        setFlash((prev) => ({ ...prev, [eventId]: `Error: ${res.error ?? "Unknown error"}` }));
+        setTimeout(() => setFlash((prev) => { const n = { ...prev }; delete n[eventId]; return n; }), 6000);
       }
     });
   }
@@ -123,7 +129,7 @@ export default function CertificatesClient({ events }: { events: EventGroup[] })
                   </span>
                 )}
                 <button
-                  onClick={() => openOutlook(ev.id, ev.title, ev.attendees)}
+                  onClick={() => sendViaGraph(ev.id, ev.title, ev.attendees)}
                   disabled={!sel.size || pending}
                   className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-40"
                   style={{
@@ -131,8 +137,8 @@ export default function CertificatesClient({ events }: { events: EventGroup[] })
                     color: sel.size ? "var(--accent-on)" : "var(--text-tertiary)",
                   }}
                 >
-                  <Send size={12} />
-                  Open Outlook{sel.size ? ` (${sel.size})` : ""}
+                  {pending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                  {pending ? "Sending…" : sel.size ? `Send (${sel.size})` : "Send"}
                 </button>
               </div>
             </div>

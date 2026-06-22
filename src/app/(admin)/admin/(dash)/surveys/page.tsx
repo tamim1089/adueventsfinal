@@ -43,6 +43,21 @@ export default async function Surveys() {
     };
   });
 
+  // Fetch attendee emails per event (for Graph API survey sends)
+  const { data: attendeesRaw } = await sb
+    .from("attendees")
+    .select("event_id, full_name, email")
+    .not("email", "is", null);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const eventAttendees: Record<string, { email: string; name: string }[]> = {};
+  for (const a of attendeesRaw ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const row = a as any;
+    if (!eventAttendees[row.event_id]) eventAttendees[row.event_id] = [];
+    eventAttendees[row.event_id].push({ email: row.email, name: row.full_name ?? row.email });
+  }
+
   const eventsForForm = events.map((e) => ({ id: e.id, title: e.title }));
 
   return (
@@ -53,11 +68,12 @@ export default async function Surveys() {
           Post-event feedback
         </h1>
         <p className="mt-2 max-w-2xl text-[var(--text-secondary)]">
-          Link a survey to any event, then send the link to attendees via Outlook.
+          Link a survey to any event, then send it to attendees directly from your ADU email.
         </p>
       </div>
 
-      <SurveysClient surveys={surveys} events={eventsForForm} />
+      <SurveysClient surveys={surveys} events={eventsForForm} eventAttendees={eventAttendees} />
     </div>
   );
 }
+

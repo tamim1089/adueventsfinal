@@ -46,7 +46,7 @@ export default function LoginForm() {
         provider: "azure",
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
-          scopes: "email openid profile",
+          scopes: "email openid profile offline_access Mail.Send",
         },
       });
       if (error) setError(error.message);

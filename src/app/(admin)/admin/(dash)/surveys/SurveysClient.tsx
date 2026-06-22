@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Send, Trash2, MessageSquareText, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
-import { createSurvey, deleteSurvey } from "./survey-actions";
+import { Plus, Send, Trash2, MessageSquareText, ExternalLink, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { createSurvey, deleteSurvey, sendSurveyEmails } from "./survey-actions";
 
 type Survey = {
   id: string;
@@ -19,9 +19,11 @@ type EventOption = { id: string; title: string };
 export default function SurveysClient({
   surveys: initial,
   events,
+  eventAttendees,
 }: {
   surveys: Survey[];
   events: EventOption[];
+  eventAttendees: Record<string, { email: string; name: string }[]>;
 }) {
   const [surveys, setSurveys] = useState(initial);
   const [showForm, setShowForm] = useState(false);
@@ -31,6 +33,7 @@ export default function SurveysClient({
   const [formError, setFormError] = useState("");
   const [pending, startTransition] = useTransition();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [flash, setFlash] = useState<Record<string, string>>({});
 
   function toggleExpand(id: string) {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -71,12 +74,37 @@ export default function SurveysClient({
     });
   }
 
-  function openOutlookForSurvey(survey: Survey) {
-    const subject = encodeURIComponent(`Feedback survey — ${survey.title}`);
-    const body = encodeURIComponent(
-      `Dear attendee,\n\nThank you for attending "${survey.eventTitle}". We would love to hear your feedback.\n\nPlease fill in our short survey:\n${survey.url || "[paste survey link here]"}\n\nBest regards,\nADU Events Team`
-    );
-    window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
+  function sendViaGraph(survey: Survey) {
+    if (!survey.url) return;
+    const recipients = eventAttendees[survey.event_id] ?? [];
+    if (!recipients.length) {
+      // No attendees in DB — fall back to generic mailto
+      const subject = encodeURIComponent(`Feedback survey — ${survey.title}`);
+      const body = encodeURIComponent(
+        `Dear attendee,\n\nThank you for attending "${survey.eventTitle}". We would love to hear your feedback.\n\nPlease fill in our short survey:\n${survey.url}\n\nBest regards,\nADU Events Team`
+      );
+      window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
+      return;
+    }
+    startTransition(async () => {
+      const res = await sendSurveyEmails(recipients, survey.title, survey.eventTitle, survey.url);
+      if (res.ok) {
+        const msg = `Sent to ${res.sent ?? recipients.length} attendees ✓`;
+        setFlash((prev) => ({ ...prev, [survey.id]: msg }));
+        setTimeout(() => setFlash((prev) => { const n = { ...prev }; delete n[survey.id]; return n; }), 5000);
+      } else if (res.needsLogin) {
+        const subject = encodeURIComponent(`Feedback survey — ${survey.title}`);
+        const body = encodeURIComponent(
+          `Dear attendee,\n\nThank you for attending "${survey.eventTitle}". We would love to hear your feedback.\n\n${survey.url}\n\nBest regards,\nADU Events Team`
+        );
+        window.open(`mailto:${recipients.map((r) => r.email).join(";")}?subject=${subject}&body=${body}`, "_blank");
+        setFlash((prev) => ({ ...prev, [survey.id]: "No Microsoft session — Outlook opened as fallback" }));
+        setTimeout(() => setFlash((prev) => { const n = { ...prev }; delete n[survey.id]; return n; }), 6000);
+      } else {
+        setFlash((prev) => ({ ...prev, [survey.id]: `Error: ${res.error ?? "Unknown"}` }));
+        setTimeout(() => setFlash((prev) => { const n = { ...prev }; delete n[survey.id]; return n; }), 6000);
+      }
+    });
   }
 
   return (
@@ -198,7 +226,12 @@ export default function SurveysClient({
                     </div>
                   </button>
 
-                  <div className="flex shrink-0 items-center gap-1">
+                  <div className="flex shrink-0 items-center gap-2">
+                    {flash[s.id] && (
+                      <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+                        {flash[s.id]}
+                      </span>
+                    )}
                     {s.url && (
                       <a
                         href={s.url}
@@ -210,11 +243,13 @@ export default function SurveysClient({
                       </a>
                     )}
                     <button
-                      onClick={() => openOutlookForSurvey(s)}
-                      className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--accent-on)] transition-transform active:scale-[0.97]"
+                      onClick={() => sendViaGraph(s)}
+                      disabled={pending || !s.url}
+                      className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--accent-on)] transition-transform active:scale-[0.97] disabled:opacity-40"
                       style={{ background: "var(--accent)" }}
                     >
-                      <Send size={11} /> Send
+                      {pending ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                      {pending ? "Sending…" : "Send"}
                     </button>
                     <button
                       onClick={() => handleDelete(s.id)}

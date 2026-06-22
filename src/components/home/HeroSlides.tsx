@@ -5,12 +5,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useScroll, useMotionValue, useMotionValueEvent, animate, useReducedMotion, type Variants } from "framer-motion";
 import { ArrowRight, Clock, MapPin } from "lucide-react";
-import { EVENTS_DATA } from "@/lib/events-data";
 import { GetStartedButton } from "@/components/ui/get-started-button";
 
 const EDGE = "px-[clamp(1.25rem,4vw,5rem)]";
 const EASE = [0.2, 0.8, 0.2, 1] as const;
-const UPCOMING = EVENTS_DATA.upcoming;
+
+export type LiveEvent = {
+  slug: string;
+  title: string;
+  organizer: string;
+  when: string;
+  venue: string;
+  image: string;
+  bannerUrl?: string | null;
+};
+
 const STATS = [
   { value: "11", label: "Organizers" },
   { value: "5", label: "Colleges" },
@@ -77,7 +86,7 @@ function HeroPanel({ reduce }: { reduce: boolean | null }) {
 }
 
 /* ---------- Slide 2: live events ---------- */
-function LivePanel() {
+function LivePanel({ events }: { events: LiveEvent[] }) {
   return (
     <section className="relative flex h-[100svh] w-full flex-col justify-center overflow-hidden bg-[var(--bg-base)]">
       {/* subtle decorative dots — desktop only */}
@@ -101,8 +110,9 @@ function LivePanel() {
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2"
           style={{ paddingLeft: "clamp(1.25rem,4vw,5rem)", paddingRight: "clamp(1.25rem,4vw,5rem)", scrollbarWidth: "none" }}
         >
-          {UPCOMING.slice(0, 3).map((e) => {
+          {events.slice(0, 3).map((e) => {
             const live = e.when.startsWith("Today");
+            const imgSrc = e.bannerUrl ?? e.image;
             return (
               <Link
                 key={e.slug}
@@ -110,7 +120,7 @@ function LivePanel() {
                 className="faux-glass card-hover group flex w-[76vw] shrink-0 snap-start flex-col overflow-hidden"
               >
                 <div className="relative aspect-[4/3] w-full overflow-hidden">
-                  <Image src={e.image} alt="" fill sizes="76vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                  <Image src={imgSrc} alt="" fill sizes="76vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
                   {live && (
                     <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white" style={{ background: "var(--accent)" }}>
                       <span className="h-1.5 w-1.5 rounded-full bg-white" /> Live
@@ -131,7 +141,7 @@ function LivePanel() {
         </div>
         {/* scroll hint dots */}
         <div className="mt-3 flex items-center justify-center gap-1.5 px-[clamp(1.25rem,4vw,5rem)]">
-          {UPCOMING.slice(0, 3).map((_, i) => (
+          {events.slice(0, 3).map((_, i) => (
             <span key={i} className={`h-1.5 rounded-full transition-all ${i === 0 ? "w-4 bg-[var(--accent)]" : "w-1.5 bg-[var(--glass-border)]"}`} />
           ))}
         </div>
@@ -139,29 +149,30 @@ function LivePanel() {
 
       {/* ── DESKTOP: 3-column grid ── */}
       <div className={`mt-9 hidden gap-5 sm:grid sm:grid-cols-2 lg:grid-cols-3 ${EDGE}`}>
-        {UPCOMING.slice(0, 3).map((e) => {
-          const live = e.when.startsWith("Today");
-          return (
-            <Link key={e.slug} href={`/events/${e.slug}`} className="faux-glass card-hover group flex flex-col overflow-hidden">
-              <div className="relative aspect-[16/10] w-full overflow-hidden">
-                <Image src={e.image} alt="" fill sizes="360px" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-                {live && (
-                  <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white" style={{ background: "var(--accent)" }}>
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" /> Live
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-1 flex-col p-5">
-                <span className="text-xs font-medium text-[var(--text-tertiary)]">{e.organizer}</span>
-                <h3 className="mt-2 font-display text-xl font-semibold leading-tight text-[var(--text-primary)]">{e.title}</h3>
-                <div className="mt-auto flex items-center gap-4 pt-4 text-xs text-[var(--text-secondary)]">
-                  <span className="inline-flex items-center gap-1.5"><Clock size={13} className="text-[var(--text-tertiary)]" /> {e.when}</span>
-                  <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-[var(--text-tertiary)]" /> {e.venue}</span>
+          {events.slice(0, 3).map((e) => {
+            const live = e.when.startsWith("Today");
+            const imgSrc = e.bannerUrl ?? e.image;
+            return (
+              <Link key={e.slug} href={`/events/${e.slug}`} className="faux-glass card-hover group flex flex-col overflow-hidden">
+                <div className="relative aspect-[16/10] w-full overflow-hidden">
+                  <Image src={imgSrc} alt="" fill sizes="360px" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                  {live && (
+                    <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white" style={{ background: "var(--accent)" }}>
+                      <span className="h-1.5 w-1.5 rounded-full bg-white" /> Live
+                    </span>
+                  )}
                 </div>
-              </div>
-            </Link>
-          );
-        })}
+                <div className="flex flex-1 flex-col p-5">
+                  <span className="text-xs font-medium text-[var(--text-tertiary)]">{e.organizer}</span>
+                  <h3 className="mt-2 font-display text-xl font-semibold leading-tight text-[var(--text-primary)]">{e.title}</h3>
+                  <div className="mt-auto flex items-center gap-4 pt-4 text-xs text-[var(--text-secondary)]">
+                    <span className="inline-flex items-center gap-1.5"><Clock size={13} className="text-[var(--text-tertiary)]" /> {e.when}</span>
+                    <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-[var(--text-tertiary)]" /> {e.venue}</span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
       </div>
 
       <div className={`mt-6 sm:mt-8 ${EDGE}`}>
@@ -173,7 +184,7 @@ function LivePanel() {
   );
 }
 
-export default function HeroSlides() {
+export default function HeroSlides({ events }: { events: LiveEvent[] }) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
@@ -195,7 +206,7 @@ export default function HeroSlides() {
     return (
       <>
         <HeroPanel reduce />
-        <LivePanel />
+        <LivePanel events={events} />
       </>
     );
   }
@@ -205,7 +216,7 @@ export default function HeroSlides() {
       <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
         <motion.div style={{ x }} className="flex h-full w-[200vw]">
           <div className="h-full w-screen shrink-0"><HeroPanel reduce={false} /></div>
-          <div className="h-full w-screen shrink-0"><LivePanel /></div>
+          <div className="h-full w-screen shrink-0"><LivePanel events={events} /></div>
         </motion.div>
       </div>
     </section>
