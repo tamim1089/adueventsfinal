@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useIsOrganizer } from "@/lib/useViewer";
 import { CalendarDays, Handshake, Users, Sparkles, GraduationCap, type LucideIcon } from "lucide-react";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -25,6 +26,14 @@ export default function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const isOrganizer = useIsOrganizer();
+
+  const visibleLinks = LINKS.filter((l) => {
+    if (l.href === "/empowered-ed-series" || l.href === "/partnerships") {
+      return isOrganizer;
+    }
+    return true;
+  });
 
   const solid = scrolled || pathname !== "/";
 
@@ -64,7 +73,7 @@ export default function SiteNav() {
 
         {/* desktop links — icon + label, lift + underline + icon pop on hover */}
         <div className="hidden items-center gap-1 md:flex">
-          {LINKS.map((l) => {
+          {visibleLinks.map((l) => {
             const Icon = l.icon;
             return (
               <a
@@ -107,7 +116,7 @@ export default function SiteNav() {
         <div
           className={`flex flex-col gap-1 border-t border-[var(--glass-border)] bg-[var(--bg-base)] py-3 md:hidden ${EDGE}`}
         >
-          {LINKS.map((l) => {
+          {visibleLinks.map((l) => {
             const Icon = l.icon;
             return (
               <a

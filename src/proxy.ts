@@ -35,9 +35,10 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
+  const isProtectedResource = request.nextUrl.pathname.startsWith("/empowered-ed-series") || request.nextUrl.pathname.startsWith("/partnerships");
   const isLogin = request.nextUrl.pathname === "/admin/login";
 
-  if (isAdminRoute && !isLogin && !user) {
+  if ((isAdminRoute || isProtectedResource) && !isLogin && !user) {
     const redirect = new URL("/admin/login", request.url);
     redirect.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(redirect);
