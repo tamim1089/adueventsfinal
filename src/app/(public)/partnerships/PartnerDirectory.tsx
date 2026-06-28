@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Mail, Phone, Building2, Building, GraduationCap, Check, Send, X, Copy, type LucideIcon } from "lucide-react";
+import { Mail, Phone, Building2, Building, GraduationCap, Check, Send, X, Copy, Camera, type LucideIcon } from "lucide-react";
+import BusinessCardScanner, { type ScannedCard } from "./BusinessCardScanner";
 import { type Partner, type PartnerCategory, SHOW_FULL_SCHOOLS } from "@/lib/partnerships-data";
 import { useIsOrganizer } from "@/lib/useViewer";
 
@@ -87,6 +88,8 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
   const isOrganizer = useIsOrganizer();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannedCards, setScannedCards] = useState<ScannedCard[]>([]);
 
   const visible = SHOW_FULL_SCHOOLS ? partners : partners.filter((p) => !(p.category === "school" && !p.mou));
   const emailable = useMemo(() => visible.filter((p) => firstEmail(p)), [visible]);
@@ -159,6 +162,85 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Clean Scanner Section */}
+      <section className="border-b border-[var(--glass-border)] bg-[var(--bg-base)]">
+        <div className={`py-16 sm:py-20 ${EDGE}`}>
+          <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-sm font-medium text-[var(--accent)]">Action — Digitize</p>
+              <h2 className="mt-3 flex items-center gap-3 font-display text-[clamp(1.75rem,3.5vw,2.75rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">
+                <Camera size={26} strokeWidth={1.75} className="text-[var(--accent)]" />
+                Scanned Cards
+                {scannedCards.length > 0 && (
+                  <span className="text-base font-normal text-[var(--text-tertiary)]">· {scannedCards.length}</span>
+                )}
+              </h2>
+              <p className="mt-3 max-w-xl text-lg text-[var(--text-secondary)]">
+                Securely digitize physical cards using on-device OCR. Data is instantly synced to your database.
+              </p>
+            </div>
+            <button
+              onClick={() => setScannerOpen(true)}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-3 font-semibold text-[var(--accent-on)] shadow-sm transition-transform hover:-translate-y-0.5 active:scale-[0.97]"
+              style={{ background: "var(--accent)" }}
+            >
+              <Camera size={18} /> Scan Business Card
+            </button>
+          </div>
+
+          {/* Scanned Cards Grid (only shows if there are scanned cards) */}
+          {scannedCards.length > 0 && (
+            <div className="mt-12">
+              <div className="mb-6 flex items-center justify-between border-b border-[var(--glass-border)] pb-4">
+                <h3 className="font-display text-2xl font-bold text-[var(--text-primary)]">Recently Scanned</h3>
+                <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-sm font-semibold text-[var(--accent)]">
+                  {scannedCards.length} Session Cards
+                </span>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {scannedCards.map((card) => (
+                  <div key={card.id} className="card-hover relative flex flex-col gap-3 rounded-[var(--r-xl)] border border-[var(--glass-border)] bg-[var(--bg-base)] p-6 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="flex items-center gap-4">
+                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--bg-subtle)] font-display text-xl font-bold text-[var(--accent)]">
+                        {card.name ? card.name.charAt(0).toUpperCase() : "?"}
+                      </div>
+                      <div>
+                        <h4 className="font-bold leading-tight text-[var(--text-primary)]">{card.name || "Unknown Name"}</h4>
+                        {card.title && <p className="text-xs font-medium text-[var(--text-tertiary)]">{card.title}</p>}
+                      </div>
+                    </div>
+                    {card.company && (
+                      <div className="mt-2 inline-flex w-fit items-center rounded bg-[var(--bg-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                        <Building size={12} className="mr-1.5 opacity-70" /> {card.company}
+                      </div>
+                    )}
+                    <div className="mt-auto pt-4 space-y-2 border-t border-[var(--glass-border)]">
+                      {card.email && (
+                        <a href={`mailto:${card.email}`} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]">
+                          <Mail size={14} className="text-[var(--accent)] opacity-80" /> <span className="truncate">{card.email}</span>
+                        </a>
+                      )}
+                      {card.phone && (
+                        <a href={`tel:${card.phone.replace(/\s/g, "")}`} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]">
+                          <Phone size={14} className="text-[var(--accent)] opacity-80" /> {card.phone}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {scannerOpen && (
+        <BusinessCardScanner
+          onClose={() => setScannerOpen(false)}
+          onScan={(card) => setScannedCards((prev) => [card, ...prev])}
+        />
       )}
 
       {GROUPS.map((g) => {
