@@ -12,7 +12,48 @@ import {
   UploadCloud,
   MonitorOff,
 } from "lucide-react";
-import Tesseract from "tesseract.js";
+// Ollama local vision endpoint
+const OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
+const OLLAMA_MODEL = "moondream";
+
+const SYSTEM_PROMPT =
+  'You are a business card OCR engine. Look at the image and extract contact info. ' +
+  'Respond with ONLY a raw JSON object — no markdown, no code fences, no explanation. ' +
+  'Schema: {"name":string|null,"email":string|null,"phone":string|null,"company":string|null,"title":string|null}. ' +
+  'If a field is not visible, use null.';
+
+async function callOllama(base64Image: string): Promise<{
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  title: string | null;
+}> {
+  // Strip data URL prefix if present
+  const imageData = base64Image.replace(/^data:image\/[a-z]+;base64,/, "");
+
+  const res = await fetch(OLLAMA_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      system: SYSTEM_PROMPT,
+      prompt: "Extract all contact information from this business card image.",
+      images: [imageData],
+      stream: false,
+      options: { temperature: 0 },
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Ollama ${res.status}`);
+
+  const data = await res.json();
+  const raw: string = data.response ?? "";
+
+  // Strip any accidental markdown code fences
+  const cleaned = raw.trim().replace(/^```[a-z]*\n?/i, "").replace(/```$/i, "").trim();
+  return JSON.parse(cleaned);
+}
 import { CameraService } from "@/lib/camera-service";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,7 +182,6 @@ export default function BusinessCardScanner({
   const scanningRef = useRef(false); // prevent overlapping OCR calls
 
   const [phase, setPhase] = useState<Phase>("preflight");
-  const [ocrProgress, setOcrProgress] = useState(0);
   const [lastCardName, setLastCardName] = useState<string | null>(null); // for flash feedback
 
   // ── On mount: run pre-flight checks (rules 3, 5, 6) ─────────────────────
@@ -333,53 +373,48 @@ export default function BusinessCardScanner({
   };
 
   /**
-   * OCR pipeline.
+   * Vision pipeline — calls local Ollama moondream model.
    *
-   * silent=true  → auto-scan: NEVER changes phase (camera stays live the whole
-   *                time). Only fires onScan + brief success flash when a real
-   *                card is detected. All failures are swallowed silently.
+   * silent=true  → auto-scan: NEVER changes phase. Camera stays live the whole
+   *                time. Fires onScan only when model returns meaningful data.
    *
-   * silent=false → user pressed "Snap Now": shows scanning progress spinner.
+   * silent=false → user pressed "Snap Now": shows scanning spinner.
    */
   const runOCR = async (imageData: string, silent = false): Promise<void> => {
-    if (!silent) {
-      setPhase("scanning");
-      setOcrProgress(0);
-    }
+    if (!silent) setPhase("scanning");
 
     try {
-      const result = await Tesseract.recognize(imageData, "eng", {
-        logger: (m) => {
-          if (!silent && m.status === "recognizing text") {
-            setOcrProgress(Math.round(m.progress * 100));
-          }
-        },
-      });
+      const result = await callOllama(imageData);
 
-      const text = result.data.text.trim();
-      const meaningfulLines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 2);
-      const hasEmail = /[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,}/.test(text);
-
-      // Not a card — not enough content. Silent: stay live. Explicit: back to live.
-      if (!hasEmail && meaningfulLines.length < 3) {
+      // Model returned nothing useful — all fields null
+      const hasContent = result.name || result.email || result.phone || result.company;
+      if (!hasContent) {
         if (!silent) setPhase("live");
         return;
       }
 
-      const parsed = parseCard(text);
+      const card: ScannedCard = {
+        id: crypto.randomUUID(),
+        name: result.name ?? "Unknown",
+        email: result.email ?? null,
+        phone: result.phone ?? null,
+        company: result.company ?? null,
+        title: result.title ?? null,
+        rawText: JSON.stringify(result),
+      };
 
-      // Fire onScan immediately — card appears on the page straight away
-      onScan(parsed);
-      setLastCardName(parsed.name);
+      // Fire immediately — card appears on page straight away
+      onScan(card);
+      setLastCardName(card.name);
 
-      // Save to backend (non-blocking, fire-and-forget)
+      // Save to backend (fire-and-forget)
       fetch("/api/scan-card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed),
+        body: JSON.stringify(card),
       }).catch(console.error);
 
-      // Flash success for 1.5 s then back to live — ready to scan another card
+      // Flash success 1.5 s then back to live — ready to scan another
       setPhase("success");
       setTimeout(() => {
         setPhase("live");
@@ -387,11 +422,11 @@ export default function BusinessCardScanner({
       }, 1500);
 
     } catch {
-      // Silent mode: swallow errors, stay live
       if (!silent) {
         setPhase("ocr_error");
         setTimeout(() => setPhase("live"), 2000);
       }
+      // Silent: swallow — camera stays on
     }
   };
 
@@ -497,18 +532,13 @@ export default function BusinessCardScanner({
           </div>
         );
 
-      // ── OCR running ──────────────────────────────────────────────────────
+      // ── AI reading card ───────────────────────────────────────────────────
       case "scanning":
         return (
           <Centered dark>
             <Loader2 size={40} className="animate-spin text-[var(--accent)]" />
-            <WhiteText>Reading card… {ocrProgress}%</WhiteText>
-            <div className="h-1.5 w-48 overflow-hidden rounded-full bg-white/20">
-              <div
-                className="h-full rounded-full bg-[var(--accent)] transition-all duration-150"
-                style={{ width: `${ocrProgress}%` }}
-              />
-            </div>
+            <WhiteText>AI reading card…</WhiteText>
+            <Muted light>moondream is processing</Muted>
           </Centered>
         );
 
