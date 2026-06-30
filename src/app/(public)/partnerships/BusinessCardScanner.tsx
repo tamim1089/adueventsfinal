@@ -1,8 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X, Camera, Loader2, CheckCircle2, ShieldAlert, Settings } from "lucide-react";
+import {
+  X,
+  Camera,
+  Loader2,
+  CheckCircle2,
+  ShieldAlert,
+  VideoOff,
+  WifiOff,
+  UploadCloud,
+  MonitorOff,
+} from "lucide-react";
 import Tesseract from "tesseract.js";
+import { CameraService } from "@/lib/camera-service";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
 
 export type ScannedCard = {
   id: string;
@@ -14,12 +29,103 @@ export type ScannedCard = {
   rawText: string;
 };
 
-type CamState =
-  | "idle"       // not yet requested — show "Allow Camera" button
-  | "requesting" // getUserMedia in flight
-  | "live"       // stream running
-  | "denied"     // hard-blocked by browser (cannot re-prompt)
-  | "error";     // device busy / not found / other
+/**
+ * Every possible UI state. The component is a pure function of this value.
+ *
+ * Lifecycle (happy path):
+ *   preflight → idle → requesting → live → scanning → success
+ *
+ * Error branches:
+ *   preflight → insecure      (rules 5–6)
+ *   requesting → denied       (rule 12: NotAllowedError)
+ *   requesting → not_found    (rule 12: NotFoundError)
+ *   requesting → not_readable (rule 12: NotReadableError)
+ *   requesting → security_err (rule 12: SecurityError)
+ *   requesting → type_err     (rule 12: TypeError)
+ *   requesting → cam_error    (rule 12: any other)
+ *   scanning   → ocr_error
+ */
+type Phase =
+  | "preflight"    // checking secure context + querying Permissions API
+  | "idle"         // permission is "prompt" or "granted" — show Allow button
+  | "requesting"   // getUserMedia in-flight (ONLY reachable via button click)
+  | "live"         // stream active — show viewfinder
+  | "denied"       // browser hard-blocked (NotAllowedError or state "denied")
+  | "not_found"    // NotFoundError — no camera device
+  | "not_readable" // NotReadableError — camera already in use
+  | "security_err" // SecurityError — permissions policy blocked
+  | "type_err"     // TypeError — mediaDevices API missing
+  | "cam_error"    // any other getUserMedia failure
+  | "insecure"     // rules 5–6: !isSecureContext or !getUserMedia
+  | "scanning"     // Tesseract OCR running
+  | "ocr_error"    // OCR failed
+  | "success";     // card captured ✓
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Rules 5–6: Verify secure context and API availability before anything else.
+ * Returns an error phase string, or null if environment is safe.
+ */
+function checkEnvironment(): "insecure" | "type_err" | null {
+  // Rule 5
+  if (typeof window !== "undefined" && !window.isSecureContext) return "insecure";
+  // Rule 6
+  if (
+    typeof navigator === "undefined" ||
+    !navigator.mediaDevices ||
+    typeof navigator.mediaDevices.getUserMedia !== "function"
+  ) {
+    return "type_err";
+  }
+  return null;
+}
+
+/**
+ * Rule 3: Query permission state without touching getUserMedia.
+ * Returns the PermissionStatus object so the caller can attach
+ * a "change" listener, or null if the Permissions API is unsupported.
+ */
+async function queryCameraPermission(): Promise<PermissionStatus | null> {
+  try {
+    return await navigator.permissions.query({ name: "camera" as PermissionName });
+  } catch {
+    // Firefox / older Safari do not support querying "camera"
+    return null;
+  }
+}
+
+/**
+ * Rule 12: Map a DOMException from getUserMedia to a Phase.
+ */
+function classifyError(err: unknown): Phase {
+  if (!(err instanceof DOMException) && !(err instanceof TypeError)) {
+    return "cam_error";
+  }
+  if (err instanceof TypeError) return "type_err";
+
+  switch (err.name) {
+    case "NotAllowedError":
+    case "PermissionDeniedError":
+      return "denied";
+    case "NotFoundError":
+    case "DevicesNotFoundError":
+      return "not_found";
+    case "NotReadableError":
+    case "TrackStartError":
+      return "not_readable";
+    case "SecurityError":
+      return "security_err";
+    default:
+      return "cam_error";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function BusinessCardScanner({
   onClose,
@@ -30,190 +136,537 @@ export default function BusinessCardScanner({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const permStatusRef = useRef<PermissionStatus | null>(null);
+  const autoScanRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scanningRef = useRef(false); // prevent overlapping OCR calls
 
-  const [camState, setCamState] = useState<CamState>("idle");
-  const [scanning, setScanning] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [success, setSuccess] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [phase, setPhase] = useState<Phase>("preflight");
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [lastCardName, setLastCardName] = useState<string | null>(null); // for flash feedback
 
-  // Cleanup stream on unmount
+  // ── On mount: run pre-flight checks (rules 3, 5, 6) ─────────────────────
+  // getUserMedia is NEVER called here — only environment + permission checks.
   useEffect(() => {
-    return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
-  }, []);
+    let cancelled = false;
 
-  /**
-   * Check Permissions API first (Chromium-based browsers).
-   * Returns: "granted" | "denied" | "prompt" | "unknown"
-   * Safari/Firefox don't support camera query — we fall back to "unknown".
-   */
-  const queryPermission = async (): Promise<"granted" | "denied" | "prompt" | "unknown"> => {
-    try {
-      const result = await navigator.permissions.query({ name: "camera" as PermissionName });
-      return result.state as "granted" | "denied" | "prompt";
-    } catch {
-      return "unknown";
-    }
-  };
+    const runPreflight = async () => {
+      // ── Rules 5–6: secure context + API availability ──────────────────────
+      const envError = checkEnvironment();
+      if (envError) {
+        if (!cancelled) setPhase(envError);
+        return;
+      }
 
-  /**
-   * Called ONLY from a user click — satisfies browser user-gesture requirement.
-   * If permission is already "denied", we skip getUserMedia (instant-fail) and
-   * show the settings guide instead.
-   */
-  const handleRequestCamera = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCamState("error");
-      setErrorMsg("Camera API not available. Use HTTPS.");
-      return;
-    }
+      // ── Rule 9: reuse existing live stream — no new request needed ─────────
+      const liveStream = CameraService.getLiveStream();
+      if (liveStream && videoRef.current) {
+        videoRef.current.srcObject = liveStream;
+        if (!cancelled) setPhase("live");
+        return;
+      }
 
-    setCamState("requesting");
+      // ── Rule 3: query permission state ─────────────────────────────────────
+      const permStatus = await queryCameraPermission();
+      permStatusRef.current = permStatus;
 
-    // Pre-check with Permissions API on supported browsers
-    const permState = await queryPermission();
-    if (permState === "denied") {
-      // Browser will instantly reject getUserMedia — skip calling it
-      setCamState("denied");
-      return;
-    }
-
-    // Permission is "prompt" or "granted" or "unknown" — call getUserMedia.
-    // This is inside a click handler, so the browser WILL show the dialog.
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      setCamState("live");
-    } catch (err: any) {
-      // Try any camera as fallback (some devices block rear-cam first)
-      try {
-        const fallback = await navigator.mediaDevices.getUserMedia({ video: true });
-        streamRef.current = fallback;
-        if (videoRef.current) videoRef.current.srcObject = fallback;
-        setCamState("live");
-      } catch (fallbackErr: any) {
-        console.warn("Camera access failed:", fallbackErr);
-        const isDenied =
-          fallbackErr?.name === "NotAllowedError" ||
-          fallbackErr?.name === "PermissionDeniedError";
-        if (isDenied) {
-          setCamState("denied");
+      if (!cancelled) {
+        if (permStatus === null) {
+          // Permissions API unsupported — default to idle (treat as "prompt")
+          setPhase("idle");
         } else {
-          setCamState("error");
-          setErrorMsg(
-            fallbackErr?.name === "NotFoundError"
-              ? "No camera found on this device."
-              : "Could not access camera. Try uploading a photo."
-          );
+          // Rule 4: handle the three states
+          applyPermissionState(permStatus.state);
+
+          // Live-watch: if user unblocks from browser settings while modal is open,
+          // automatically recover without closing/reopening the modal.
+          permStatus.addEventListener("change", () => {
+            if (!cancelled) applyPermissionState(permStatus.state);
+          });
         }
       }
+    };
+
+    runPreflight();
+
+    return () => {
+      cancelled = true;
+      permStatusRef.current?.removeEventListener("change", () => {});
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Auto-scan loop: fires every 2.5 s while live ──────────────────────────
+  useEffect(() => {
+    if (phase !== "live") {
+      if (autoScanRef.current) clearTimeout(autoScanRef.current);
+      return;
+    }
+
+    const scheduleNext = () => {
+      autoScanRef.current = setTimeout(async () => {
+        if (scanningRef.current) { scheduleNext(); return; }
+        if (!videoRef.current || !canvasRef.current) { scheduleNext(); return; }
+        const video = videoRef.current;
+        if (video.readyState < 2) { scheduleNext(); return; }
+
+        scanningRef.current = true;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          await runOCR(canvas.toDataURL("image/jpeg", 0.85), true); // silent: never flickers
+        }
+        scanningRef.current = false;
+      }, 2500);
+    };
+
+    scheduleNext();
+
+    return () => {
+      if (autoScanRef.current) clearTimeout(autoScanRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  /**
+   * Rule 4: translate PermissionState → Phase.
+   * "denied"  → show blocked UI, STOP (rule 4 / rule 13).
+   * "prompt"  → show Allow button (user must click to proceed).
+   * "granted" → show Allow button (camera can start on first click).
+   */
+  const applyPermissionState = (state: PermissionStatus["state"]) => {
+    setPhase(state === "denied" ? "denied" : "idle");
+  };
+
+  // ── Camera start — ONLY called from a direct button click (rules 1–2) ────
+  const handleStartCamera = async () => {
+    // Safety guard: bail if somehow called when denied
+    if (phase === "denied") return;
+
+    // ── Re-check permission state right before calling getUserMedia (rule 3) ──
+    if (permStatusRef.current?.state === "denied") {
+      setPhase("denied");
+      return; // Rule 4 / Rule 13: NEVER call getUserMedia when denied
+    }
+
+    // ── Rule 9: skip getUserMedia if stream is already live ───────────────────
+    const liveStream = CameraService.getLiveStream();
+    if (liveStream && videoRef.current) {
+      videoRef.current.srcObject = liveStream;
+      setPhase("live");
+      return;
+    }
+
+    // ── Rules 1–2: getUserMedia called ONLY here, from the click handler ──────
+    setPhase("requesting");
+
+    try {
+      // Rules 2, 7 (via CameraService.setStream), 8, 10
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }, // prefer rear camera
+      });
+
+      // Rule 7 + 8: stop old tracks, store new stream
+      CameraService.setStream(stream);
+
+      // Rule 10: attach stream to video element, transition to live
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setPhase("live");
+    } catch (err) {
+      console.warn("[BusinessCardScanner] getUserMedia failed:", err);
+
+      const errorPhase = classifyError(err);
+
+      // If the environment camera constraint failed, try without it (non-permission errors only)
+      if (errorPhase !== "denied" && errorPhase !== "security_err" && errorPhase !== "type_err") {
+        try {
+          const fallback = await navigator.mediaDevices.getUserMedia({ video: true });
+          CameraService.setStream(fallback);
+          if (videoRef.current) videoRef.current.srcObject = fallback;
+          setPhase("live");
+          return;
+        } catch (fallbackErr) {
+          console.warn("[BusinessCardScanner] fallback also failed:", fallbackErr);
+          setPhase(classifyError(fallbackErr));
+          return;
+        }
+      }
+
+      setPhase(errorPhase);
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const img = new Image();
-    img.onload = () => {
-      if (!canvasRef.current) return;
-      setScanning(true);
-      setErrorMsg("");
-
-      const canvas = canvasRef.current;
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0);
-
-      processImageData(canvas.toDataURL("image/png"));
-    };
-    img.src = URL.createObjectURL(file);
-  };
-
-  const handleScan = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    setScanning(true);
-    setErrorMsg("");
-
+  // ── Manual capture (still available as fallback) ─────────────────────────
+  const handleCapture = () => {
+    if (!videoRef.current || !canvasRef.current || scanningRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    processImageData(canvas.toDataURL("image/png"));
+    scanningRef.current = true;
+    runOCR(canvas.toDataURL("image/jpeg", 0.85)).finally(() => { scanningRef.current = false; });
   };
 
-  const processImageData = async (imageData: string) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      if (!canvasRef.current) return;
+      const canvas = canvasRef.current;
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0);
+      scanningRef.current = true;
+      runOCR(canvas.toDataURL("image/jpeg", 0.85)).finally(() => { scanningRef.current = false; });
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  /**
+   * OCR pipeline.
+   *
+   * silent=true  → auto-scan: NEVER changes phase (camera stays live the whole
+   *                time). Only fires onScan + brief success flash when a real
+   *                card is detected. All failures are swallowed silently.
+   *
+   * silent=false → user pressed "Snap Now": shows scanning progress spinner.
+   */
+  const runOCR = async (imageData: string, silent = false): Promise<void> => {
+    if (!silent) {
+      setPhase("scanning");
+      setOcrProgress(0);
+    }
+
     try {
       const result = await Tesseract.recognize(imageData, "eng", {
         logger: (m) => {
-          if (m.status === "recognizing text") {
-            setProgress(Math.round(m.progress * 100));
+          if (!silent && m.status === "recognizing text") {
+            setOcrProgress(Math.round(m.progress * 100));
           }
         },
       });
 
-      const text = result.data.text;
-      const parsed = parseBusinessCard(text);
+      const text = result.data.text.trim();
+      const meaningfulLines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 2);
+      const hasEmail = /[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,}/.test(text);
 
-      await fetch("/api/scan-card", {
+      // Not a card — not enough content. Silent: stay live. Explicit: back to live.
+      if (!hasEmail && meaningfulLines.length < 3) {
+        if (!silent) setPhase("live");
+        return;
+      }
+
+      const parsed = parseCard(text);
+
+      // Fire onScan immediately — card appears on the page straight away
+      onScan(parsed);
+      setLastCardName(parsed.name);
+
+      // Save to backend (non-blocking, fire-and-forget)
+      fetch("/api/scan-card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed),
       }).catch(console.error);
 
-      setSuccess(true);
+      // Flash success for 1.5 s then back to live — ready to scan another card
+      setPhase("success");
       setTimeout(() => {
-        onScan(parsed);
-        onClose();
-      }, 1000);
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Failed to read the card. Please try again.");
-      setScanning(false);
+        setPhase("live");
+        setLastCardName(null);
+      }, 1500);
+
+    } catch {
+      // Silent mode: swallow errors, stay live
+      if (!silent) {
+        setPhase("ocr_error");
+        setTimeout(() => setPhase("live"), 2000);
+      }
     }
   };
 
-  const parseBusinessCard = (text: string): ScannedCard => {
+  const parseCard = (text: string): ScannedCard => {
     const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-    const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/;
-    const phoneRegex =
-      /(?:(?:\+?1\s*(?:[.-]\s*)?)?(?:\(\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\s*\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\s*(?:[.-]\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\s*(?:[.-]\s*)?([0-9]{4})(?:\s*(?:#|x\.?|ext\.?|extension)\s*(\d+))?|\+[\d\s-]{8,20}/;
+    const emailRx = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/;
+    const phoneRx = /(?:\+|00)[\d\s().-]{7,20}|\b\d{3}[\s.-]\d{3}[\s.-]\d{4}\b|\b\d{7,12}\b/;
+    const titleKw = /\b(ceo|coo|cto|cfo|director|manager|engineer|consultant|specialist|coordinator|president|officer|head|vp|vice|lead|senior|analyst|advisor|professor|dr\.|phd)\b/i;
+    const companyKw = /\b(llc|ltd|inc|corp|co\.|group|holdings|university|institute|authority|ministry|department|academy|school|company|solutions|services|technologies)\b/i;
 
-    let email = null;
-    let phone = null;
-    let name = "Unknown";
-    const company = null;
-    const title = null;
+    let email: string | null = null;
+    let phone: string | null = null;
+    let title: string | null = null;
+    let company: string | null = null;
 
     for (const line of lines) {
-      if (!email && emailRegex.test(line)) {
-        email = line.match(emailRegex)?.[0] || null;
-      } else if (!phone && phoneRegex.test(line)) {
-        phone = line.match(phoneRegex)?.[0] || null;
-      }
+      if (!email && emailRx.test(line)) { email = line.match(emailRx)?.[0] ?? null; continue; }
+      if (!phone && phoneRx.test(line)) { phone = line.match(phoneRx)?.[0]?.trim() ?? null; continue; }
+      if (!title && titleKw.test(line) && line.length < 80) { title = line; continue; }
+      if (!company && companyKw.test(line) && line.length < 80) { company = line; continue; }
     }
 
-    const nameLine = lines.find(
-      (l) => !emailRegex.test(l) && !phoneRegex.test(l) && l.length > 3
-    );
-    if (nameLine) name = nameLine;
+    // Name heuristic: first line that isn't email/phone/title/company and looks like a name
+    const nameRx = /^[A-Z][a-z]+(\s[A-Z][a-z]+){0,3}$/;
+    const name =
+      lines.find((l) =>
+        !emailRx.test(l) &&
+        !phoneRx.test(l) &&
+        !titleKw.test(l) &&
+        !companyKw.test(l) &&
+        (nameRx.test(l) || l.split(" ").length <= 4) &&
+        l.length > 2 &&
+        l.length < 50
+      ) ?? lines[0] ?? "Unknown";
 
     return { id: crypto.randomUUID(), name, email, phone, company, title, rawText: text };
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Content rendered inside the camera viewport area */
+  const renderViewport = () => {
+    switch (phase) {
+      // ── Checking environment + permissions ──────────────────────────────
+      case "preflight":
+        return (
+          <Centered>
+            <Loader2 size={28} className="animate-spin text-[var(--accent)]" />
+            <Muted>Checking camera access…</Muted>
+          </Centered>
+        );
+
+      // ── Ready: show Enable Camera button ────────────────────────────────
+      case "idle":
+        return (
+          <Centered>
+            <div
+              className="mb-1 flex h-16 w-16 items-center justify-center rounded-full"
+              style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)" }}
+            >
+              <Camera size={30} className="text-[var(--accent)]" />
+            </div>
+            <Title>Allow camera access</Title>
+            <Body>
+              Point your camera at a business card — we&apos;ll read the
+              contact details automatically.
+            </Body>
+            {/* ── Rules 1–2: ONLY trigger getUserMedia from this click ── */}
+            <PrimaryBtn onClick={handleStartCamera}>
+              <Camera size={17} />
+              Enable Camera
+            </PrimaryBtn>
+            <Muted>Your browser will prompt once.</Muted>
+          </Centered>
+        );
+
+      // ── getUserMedia in-flight ───────────────────────────────────────────
+      case "requesting":
+        return (
+          <Centered dark>
+            <Loader2 size={36} className="animate-spin text-[var(--accent)]" />
+            <WhiteText>Requesting camera access…</WhiteText>
+            <Muted light>Check the browser prompt above ↑</Muted>
+          </Centered>
+        );
+
+      // ── Viewfinder overlay when live ─────────────────────────────────────
+      case "live":
+        return (
+          <div className="pointer-events-none absolute inset-0 border-[6px] border-black/40">
+            {/* Corner brackets */}
+            <div className="absolute inset-8">
+              <span className="absolute left-0 top-0 h-6 w-6 border-l-2 border-t-2 border-white" />
+              <span className="absolute right-0 top-0 h-6 w-6 border-r-2 border-t-2 border-white" />
+              <span className="absolute bottom-0 left-0 h-6 w-6 border-b-2 border-l-2 border-white" />
+              <span className="absolute bottom-0 right-0 h-6 w-6 border-b-2 border-r-2 border-white" />
+            </div>
+            <p className="absolute bottom-4 left-0 right-0 text-center text-xs font-semibold tracking-widest uppercase text-white/80 drop-shadow-md">
+              Auto-detecting · Hold card steady
+            </p>
+          </div>
+        );
+
+      // ── OCR running ──────────────────────────────────────────────────────
+      case "scanning":
+        return (
+          <Centered dark>
+            <Loader2 size={40} className="animate-spin text-[var(--accent)]" />
+            <WhiteText>Reading card… {ocrProgress}%</WhiteText>
+            <div className="h-1.5 w-48 overflow-hidden rounded-full bg-white/20">
+              <div
+                className="h-full rounded-full bg-[var(--accent)] transition-all duration-150"
+                style={{ width: `${ocrProgress}%` }}
+              />
+            </div>
+          </Centered>
+        );
+
+      // ── Done ─────────────────────────────────────────────────────────────
+      case "success":
+        return (
+          <Centered dark>
+            <CheckCircle2 size={56} className="text-green-400" />
+            <WhiteText>Card captured!</WhiteText>
+            {lastCardName && lastCardName !== "Unknown" && (
+              <p className="text-sm text-white/70">{lastCardName}</p>
+            )}
+            <p className="text-xs text-white/50">Added to Scanned Cards ↓</p>
+          </Centered>
+        );
+
+      // ── Rule 4 + 15: permission denied — NO retry, show fix guide ────────
+      case "denied":
+        return (
+          <Centered bg>
+            <ShieldAlert size={32} className="text-amber-400" />
+            <Title>Camera is blocked</Title>
+            <Body>
+              Enable it from your browser settings (lock icon in the address
+              bar).
+            </Body>
+            <StepList
+              steps={[
+                <>Click the <strong className="text-[var(--text-primary)]">🔒 lock</strong> icon in your address bar</>,
+                <>Set <strong className="text-[var(--text-primary)]">Camera</strong> → <strong className="text-[var(--text-primary)]">Allow</strong></>,
+                <>Reload the page and try again</>,
+              ]}
+              accent="amber"
+            />
+          </Centered>
+        );
+
+      // ── No camera device ─────────────────────────────────────────────────
+      case "not_found":
+        return (
+          <Centered bg>
+            <VideoOff size={32} className="text-[var(--text-tertiary)]" />
+            <Title>No camera detected</Title>
+            <Body>This device has no accessible camera. Upload a photo instead.</Body>
+          </Centered>
+        );
+
+      // ── Camera in use by another app ─────────────────────────────────────
+      case "not_readable":
+        return (
+          <Centered bg>
+            <MonitorOff size={32} className="text-orange-400" />
+            <Title>Camera in use</Title>
+            <Body>
+              Another app is using your camera. Close it and try again, or
+              upload a photo.
+            </Body>
+          </Centered>
+        );
+
+      // ── SecurityError ────────────────────────────────────────────────────
+      case "security_err":
+        return (
+          <Centered bg>
+            <ShieldAlert size={32} className="text-red-400" />
+            <Title>Blocked by permissions policy</Title>
+            <Body>
+              Your browser&apos;s permissions policy is blocking camera access.
+              Contact the site admin or upload a photo.
+            </Body>
+          </Centered>
+        );
+
+      // ── Rules 5–6: insecure origin / missing API ──────────────────────────
+      case "insecure":
+        return (
+          <Centered bg>
+            <WifiOff size={32} className="text-red-400" />
+            <Title>Insecure origin</Title>
+            <Body>
+              Camera not supported or insecure origin. This feature requires
+              HTTPS.
+            </Body>
+          </Centered>
+        );
+
+      // ── TypeError (missing API) ───────────────────────────────────────────
+      case "type_err":
+        return (
+          <Centered bg>
+            <WifiOff size={32} className="text-red-400" />
+            <Title>Camera not supported</Title>
+            <Body>
+              Camera not supported or insecure origin. Try a modern browser
+              over HTTPS.
+            </Body>
+          </Centered>
+        );
+
+      // ── Generic camera failure ────────────────────────────────────────────
+      case "cam_error":
+        return (
+          <Centered bg>
+            <VideoOff size={32} className="text-[var(--text-tertiary)]" />
+            <Title>Camera unavailable</Title>
+            <Body>Could not start the camera. Upload a photo instead.</Body>
+          </Centered>
+        );
+
+      // ── OCR failure ───────────────────────────────────────────────────────
+      case "ocr_error":
+        return (
+          <Centered bg>
+            <VideoOff size={32} className="text-[var(--text-tertiary)]" />
+            <Title>Couldn&apos;t read the card</Title>
+            <Body>OCR failed. Try again or upload a clearer photo.</Body>
+          </Centered>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  /** Bottom action bar */
+  const renderActionBar = () => {
+    if (phase === "live") {
+      return (
+        <div className="flex flex-col items-center gap-3 w-full">
+          <PrimaryBtn onClick={handleCapture} full>
+            <Camera size={18} />
+            Snap Now
+          </PrimaryBtn>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            Or hold the card still — auto-detects every 2.5 s
+          </p>
+        </div>
+      );
+    }
+
+    // All other phases: upload fallback
+    return (
+      <label
+        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3.5 font-semibold text-[var(--accent-on)] shadow-sm transition-transform active:scale-[0.98]"
+        style={{ background: "var(--accent)" }}
+      >
+        <UploadCloud size={18} />
+        Upload Image Instead
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
+      </label>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
@@ -223,144 +676,134 @@ export default function BusinessCardScanner({
           <h3 className="font-display text-lg font-bold text-[var(--text-primary)]">
             Scan Business Card
           </h3>
-          <button onClick={onClose} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+          <button
+            onClick={onClose}
+            aria-label="Close scanner"
+            className="rounded-md p-1 text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)]"
+          >
             <X size={20} />
           </button>
         </div>
 
-        {/* Camera / status area */}
-        <div className="relative aspect-[4/3] w-full bg-black">
-          {/* Video — always rendered so ref is stable */}
+        {/* Camera viewport */}
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-black">
+          {/* Video element always in DOM so ref is stable for srcObject (rule 10) */}
           <video
             ref={videoRef}
             autoPlay
             playsInline
-            className={`h-full w-full object-cover transition-opacity ${
-              camState === "live" && !success ? "opacity-100" : "opacity-0"
+            muted
+            className={`h-full w-full object-cover transition-opacity duration-300 ${
+              phase === "live" || phase === "scanning" || phase === "success"
+                ? "opacity-100"
+                : "opacity-0"
             }`}
           />
           <canvas ref={canvasRef} className="hidden" />
-
-          {/* ── IDLE: not yet requested ── */}
-          {camState === "idle" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[var(--bg-base)] p-6 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--accent)]/10">
-                <Camera size={32} className="text-[var(--accent)]" />
-              </div>
-              <div>
-                <p className="font-semibold text-[var(--text-primary)]">Camera access needed</p>
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  Point your camera at a business card to scan its details automatically.
-                </p>
-              </div>
-              <button
-                onClick={handleRequestCamera}
-                className="flex items-center gap-2 rounded-full px-7 py-3 font-semibold text-[var(--accent-on)] shadow transition-transform hover:scale-105 active:scale-95"
-                style={{ background: "var(--accent)" }}
-              >
-                <Camera size={17} /> Allow Camera Access
-              </button>
-              <p className="text-xs text-[var(--text-tertiary)]">— or upload a photo below —</p>
-            </div>
-          )}
-
-          {/* ── REQUESTING: waiting for browser dialog ── */}
-          {camState === "requesting" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 text-white">
-              <Loader2 size={36} className="animate-spin text-[var(--accent)]" />
-              <p className="text-sm font-medium">Waiting for camera permission…</p>
-              <p className="text-xs text-white/60">Check your browser&apos;s permission dialog</p>
-            </div>
-          )}
-
-          {/* ── LIVE: guide overlay ── */}
-          {camState === "live" && !scanning && !success && (
-            <div className="pointer-events-none absolute inset-0 border-[6px] border-black/40">
-              <div className="absolute inset-8 rounded-xl border-2 border-dashed border-white/70" />
-              <div className="absolute bottom-4 left-0 right-0 text-center text-sm font-medium text-white drop-shadow-md">
-                Align card within the frame
-              </div>
-            </div>
-          )}
-
-          {/* ── SCANNING ── */}
-          {scanning && !success && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white">
-              <Loader2 size={40} className="animate-spin text-[var(--accent)]" />
-              <p className="mt-4 font-medium">Scanning… {progress}%</p>
-            </div>
-          )}
-
-          {/* ── SUCCESS ── */}
-          {success && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <CheckCircle2 size={60} className="mb-2 text-green-500" />
-              <p className="font-bold text-white">Card Captured!</p>
-            </div>
-          )}
-
-          {/* ── DENIED: browser hard-blocked, cannot re-prompt ── */}
-          {camState === "denied" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/95 p-6 text-center">
-              <ShieldAlert size={36} className="text-amber-400" />
-              <p className="font-semibold text-white">Camera blocked by browser</p>
-              <p className="max-w-xs text-sm leading-relaxed text-white/70">
-                Your browser has denied camera access for this site. To fix it:
-              </p>
-              <ol className="w-full max-w-xs space-y-1.5 text-left text-sm text-white/80">
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">1</span>
-                  Click the <strong className="text-white">🔒 lock icon</strong> in your address bar
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">2</span>
-                  Find <strong className="text-white">Camera</strong> → set it to <strong className="text-white">Allow</strong>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">3</span>
-                  Reload the page and try again
-                </li>
-              </ol>
-              <div className="mt-1 flex items-center gap-2 rounded-lg bg-white/5 px-4 py-2 text-xs text-white/50">
-                <Settings size={13} />
-                Or use the upload option below
-              </div>
-            </div>
-          )}
-
-          {/* ── ERROR: other failure ── */}
-          {camState === "error" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/90 p-6 text-center">
-              <p className="font-medium text-white">{errorMsg}</p>
-              <label className="cursor-pointer rounded-full bg-white px-6 py-2.5 font-bold text-black transition hover:scale-105 active:scale-95">
-                Choose Image File
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
-              </label>
-            </div>
-          )}
+          {renderViewport()}
         </div>
 
-        {/* Bottom action bar */}
-        <div className="p-6">
-          {camState === "live" && !errorMsg ? (
-            <button
-              onClick={handleScan}
-              disabled={scanning || success}
-              className="flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 font-semibold text-[var(--accent-on)] shadow-sm transition-transform active:scale-[0.98] disabled:opacity-50"
-              style={{ background: "var(--accent)" }}
-            >
-              <Camera size={18} />
-              {scanning ? "Processing Image…" : "Capture Card"}
-            </button>
-          ) : (
-            <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3.5 font-semibold text-[var(--accent-on)] shadow-sm transition-transform active:scale-[0.98]" style={{ background: "var(--accent)" }}>
-              <Camera size={18} />
-              Upload Image Instead
-              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
-            </label>
-          )}
-        </div>
+        {/* Action bar */}
+        <div className="p-6">{renderActionBar()}</div>
       </div>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Small layout primitives (avoid repeating long className strings)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Centered({
+  children,
+  dark,
+  bg,
+}: {
+  children: React.ReactNode;
+  dark?: boolean;
+  bg?: boolean;
+}) {
+  return (
+    <div
+      className={`absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center ${
+        dark ? "bg-black/80" : bg ? "bg-[var(--bg-base)]" : "bg-[var(--bg-base)]"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Title({ children }: { children: React.ReactNode }) {
+  return <p className="font-semibold text-[var(--text-primary)]">{children}</p>;
+}
+
+function Body({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="max-w-xs text-sm leading-relaxed text-[var(--text-secondary)]">
+      {children}
+    </p>
+  );
+}
+
+function Muted({ children, light }: { children: React.ReactNode; light?: boolean }) {
+  return (
+    <p className={`text-xs ${light ? "text-white/50" : "text-[var(--text-tertiary)]"}`}>
+      {children}
+    </p>
+  );
+}
+
+function WhiteText({ children }: { children: React.ReactNode }) {
+  return <p className="font-medium text-white">{children}</p>;
+}
+
+function PrimaryBtn({
+  children,
+  onClick,
+  full,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  full?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center justify-center gap-2 rounded-full px-7 py-3 font-semibold text-[var(--accent-on)] shadow-md transition-transform hover:scale-105 active:scale-95 ${
+        full ? "w-full" : ""
+      }`}
+      style={{ background: "var(--accent)" }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StepList({
+  steps,
+  accent,
+}: {
+  steps: React.ReactNode[];
+  accent?: "amber" | "blue";
+}) {
+  const accentClass =
+    accent === "amber"
+      ? "bg-amber-400/15 text-amber-400"
+      : "bg-[var(--accent)]/15 text-[var(--accent)]";
+
+  return (
+    <ol className="w-full max-w-xs space-y-2 text-left text-sm text-[var(--text-secondary)]">
+      {steps.map((step, i) => (
+        <li key={i} className="flex items-start gap-2">
+          <span
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${accentClass}`}
+          >
+            {i + 1}
+          </span>
+          <span>{step}</span>
+        </li>
+      ))}
+    </ol>
   );
 }
