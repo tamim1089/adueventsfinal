@@ -13,8 +13,10 @@ import {
   MonitorOff,
   ScanLine,
   RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 import { CameraService } from "@/lib/camera-service";
+import { assessFrameSharpness } from "@/lib/frame-quality";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -154,19 +156,36 @@ export default function BusinessCardScanner({
 
   const [phase, setPhase]           = useState<Phase>("preflight");
   const [workerReady, setWorkerReady] = useState(false);
-  const [scanStatus, setScanStatus] = useState<"idle" | "reading">("idle");
+  const [scanStatus, setScanStatus] = useState<"idle" | "focusing" | "reading">("idle");
   const [lastCardName, setLastCardName] = useState<string | null>(null);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [ocrInitKey, setOcrInitKey] = useState(0);
 
-  // ── Boot Tesseract worker once on mount ───────────────────────────────────
+  // ── Boot Tesseract worker once on mount (retry via ocrInitKey) ────────────
   useEffect(() => {
     let alive = true;
+    setOcrError(null);
+    setWorkerReady(false);
+    workerReadyRef.current = false;
+
+    // Terminate any previous worker before re-initialising
+    workerRef.current?.terminate().catch(() => {});
+    workerRef.current = null;
+
     (async () => {
-      const { createWorker } = await import("tesseract.js");
-      const w = await createWorker("eng", 1, { logger: () => {} });
-      if (!alive) { w.terminate(); return; }
-      workerRef.current = w;
-      workerReadyRef.current = true;
-      setWorkerReady(true);
+      try {
+        const { createWorker } = await import("tesseract.js");
+        const w = await createWorker("eng", 1, { logger: () => {} });
+        if (!alive) { w.terminate(); return; }
+        workerRef.current = w;
+        workerReadyRef.current = true;
+        setWorkerReady(true);
+      } catch (err) {
+        if (!alive) return;
+        const msg =
+          err instanceof Error ? err.message : "Failed to load OCR engine";
+        setOcrError(msg);
+      }
     })();
 
     return () => {
@@ -175,7 +194,19 @@ export default function BusinessCardScanner({
       workerRef.current = null;
       workerReadyRef.current = false;
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ocrInitKey]);
+
+  // ── Loading timeout: show hint after 20s ────────────────────────────────
+  useEffect(() => {
+    if (workerReady || ocrError) return;
+    const id = setTimeout(() => {
+      setOcrError(
+        "OCR engine is taking longer than expected. Try uploading an image instead, or close and reopen the scanner."
+      );
+    }, 20000);
+    return () => clearTimeout(id);
+  }, [workerReady, ocrError]);
 
   // ── Pre-flight ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -242,7 +273,7 @@ export default function BusinessCardScanner({
     return canvas.toDataURL("image/jpeg", 0.85);
   }, []);
 
-  // ── Auto-scan loop ─────────────────────────────────────────────────────────
+  // ── Auto-scan loop with frame-quality gate ──────────────────────────────────
   useEffect(() => {
     if (phase !== "live" || !workerReady) return;
 
@@ -252,63 +283,120 @@ export default function BusinessCardScanner({
       // Give camera a moment to warm up
       await wait(600);
 
+      // ── Candidate accumulation ───────────────────────────────────────────────
+      type Candidate = {
+        parsed: Omit<ScannedCard, "id" | "rawText" | "confidence">;
+        rawText: string;
+        sharpness: number;
+        ocrConfidence: number;
+      };
+      const candidates: Candidate[] = [];
+
+      const WINDOW_MS     = 2500;  // collect good frames for up to this long
+      const MAX_WAIT_MS   = 12000; // give up after this if zero candidates
+      const MIN_CONFIDENT = 2;     // accept early after this many good scans
+      const QUALITY_MIN   = 0.28;  // blur-gate threshold (0-1)
+
+      const startTime = performance.now();
+
       while (!stoppedRef.current) {
+        const elapsed = performance.now() - startTime;
+
+        // ── Exit conditions ─────────────────────────────────────────────
+        if (candidates.length >= MIN_CONFIDENT) break;
+        if (candidates.length > 0 && elapsed >= WINDOW_MS) break;
+        if (elapsed >= MAX_WAIT_MS) break;
+
         if (scanningRef.current) { await wait(200); continue; }
 
         const dataUrl = grabFrame();
         if (!dataUrl) { await wait(300); continue; }
 
+        // ── Layer 1: quick sharpness gate (< 5 ms) ──────────────────────
+        if (!canvasRef.current) { await wait(300); continue; }
+        const sharpness = assessFrameSharpness(canvasRef.current);
+
+        if (sharpness < QUALITY_MIN) {
+          setScanStatus("focusing");
+          await wait(150);
+          continue;
+        }
+
+        // ── Layer 2: OCR on the high-quality frame ──────────────────────
         scanningRef.current = true;
         setScanStatus("reading");
 
         try {
           const { data } = await workerRef.current.recognize(dataUrl);
-          const rawText = data.text ?? "";
+          const rawText: string = data.text ?? "";
+          const ocrConfidence: number = data.confidence ?? 0;
 
           if (!stoppedRef.current && rawText.trim().length > 8) {
-            const card = parseCard(rawText);
-            const key  = card.email ?? card.phone ?? "";
+            const parsed = parseCard(rawText);
+            const key    = parsed.email ?? parsed.phone ?? "";
 
-            if (hasSignal(card) && key !== lastKeyRef.current) {
-              lastKeyRef.current = key;
-              stoppedRef.current = true; // stop loop — we got a card
-
-              const scanned: ScannedCard = {
-                id: crypto.randomUUID(),
-                rawText,
-                confidence: 0.8,
-                ...card,
-              };
-
-              onScan(scanned);
-              setLastCardName(scanned.name);
-              setPhase("success");
-
-              // Save to backend (fire-and-forget)
-              fetch("/api/scan-card", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(scanned),
-              }).catch(() => {});
-
-              // After 2.5s return to live scanning
-              setTimeout(() => {
-                lastKeyRef.current = "";
-                setLastCardName(null);
-                setScanStatus("idle");
-                stoppedRef.current = false;
-                setPhase("live");
-              }, 2500);
-              break;
+            if (hasSignal(parsed) && key) {
+              // Dedup against already-collected candidates
+              const isDuplicate = candidates.some(
+                (c) => (c.parsed.email ?? c.parsed.phone) === key
+              );
+              if (!isDuplicate) {
+                candidates.push({ parsed, rawText, sharpness, ocrConfidence });
+              }
             }
           }
         } catch {
-          // Swallow — just try next frame
+          // Swallow — try next frame
         }
 
         scanningRef.current = false;
         setScanStatus("idle");
-        await wait(700); // ~1 FPS
+        await wait(400);
+      }
+
+      // ── Layer 3: pick best candidate & accept ────────────────────────────────
+      if (candidates.length > 0) {
+        const best = candidates.reduce((a, b) => {
+          const scoreA = a.sharpness * 100 + a.ocrConfidence;
+          const scoreB = b.sharpness * 100 + b.ocrConfidence;
+          return scoreA >= scoreB ? a : b;
+        });
+
+        const key = best.parsed.email ?? best.parsed.phone ?? "";
+        lastKeyRef.current = key;
+
+        const scanned: ScannedCard = {
+          id: crypto.randomUUID(),
+          rawText: best.rawText,
+          confidence: Math.round(best.ocrConfidence),
+          ...best.parsed,
+        };
+
+        onScan(scanned);
+        setLastCardName(scanned.name);
+        setPhase("success");
+
+        // Save to backend (fire-and-forget)
+        fetch("/api/scan-card", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(scanned),
+        }).catch(() => {});
+
+        // After 2.5s return to live scanning
+        setTimeout(() => {
+          lastKeyRef.current = "";
+          setLastCardName(null);
+          setScanStatus("idle");
+          stoppedRef.current = false;
+          setPhase("live");
+        }, 2500);
+      } else {
+        // No usable text found yet — restart the loop silently
+        await wait(800);
+        stoppedRef.current = false;
+        loop();
+        return;
       }
 
       scanningRef.current = false;
@@ -327,7 +415,11 @@ export default function BusinessCardScanner({
   // ── Manual upload ─────────────────────────────────────────────────────────
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !workerRef.current) return;
+    if (!file) return;
+    if (!workerRef.current) {
+      setOcrError("OCR engine is not ready. Try again or restart the scanner.");
+      return;
+    }
     const img = new Image();
     img.onload = async () => {
       if (!canvasRef.current) return;
@@ -343,9 +435,10 @@ export default function BusinessCardScanner({
       try {
         const { data } = await workerRef.current.recognize(dataUrl);
         const rawText = data.text ?? "";
+        const ocrConfidence: number = data.confidence ?? 0;
         const card = parseCard(rawText);
         if (hasSignal(card)) {
-          const scanned: ScannedCard = { id: crypto.randomUUID(), rawText, confidence: 0.8, ...card };
+          const scanned: ScannedCard = { id: crypto.randomUUID(), rawText, confidence: Math.round(ocrConfidence), ...card };
           onScan(scanned);
           setLastCardName(scanned.name);
           setPhase("success");
@@ -370,6 +463,23 @@ export default function BusinessCardScanner({
     switch (phase) {
       case "preflight":
       case "idle":
+        if (ocrError) {
+          return (
+            <Centered bg>
+              <AlertCircle size={32} className="text-amber-400" />
+              <p className="font-semibold text-[var(--text-primary)]">OCR unavailable</p>
+              <p className="max-w-xs text-sm text-[var(--text-secondary)]">{ocrError}</p>
+              <button
+                onClick={() => setOcrInitKey((k) => k + 1)}
+                className="flex items-center gap-2 rounded-full px-5 py-2 font-semibold text-[var(--accent-on)]"
+                style={{ background: "var(--accent)" }}
+              >
+                <RotateCcw size={15} />
+                Retry OCR
+              </button>
+            </Centered>
+          );
+        }
         return (
           <Centered>
             {!workerReady
@@ -436,10 +546,16 @@ export default function BusinessCardScanner({
               <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-sm transition-all ${
                 scanStatus === "reading"
                   ? "bg-[var(--accent)]/80 text-white"
-                  : "bg-black/50 text-white/70"
+                  : scanStatus === "focusing"
+                    ? "bg-amber-500/60 text-white"
+                    : "bg-black/50 text-white/70"
               }`}>
                 <ScanLine size={11} />
-                {scanStatus === "reading" ? "Reading…" : "Hold card steady"}
+                {scanStatus === "reading"
+                  ? "Reading…"
+                  : scanStatus === "focusing"
+                    ? "Focusing…"
+                    : "Hold card steady"}
               </span>
             </div>
           </div>
