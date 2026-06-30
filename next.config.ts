@@ -8,12 +8,13 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 // Strict CSP in production only (dev/Turbopack needs eval).
 const csp = [
   `default-src 'self'`,
-  `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline'`,
+  `script-src 'self'${isProd ? "" : " 'unsafe-eval'"} 'unsafe-inline' https://cdn.jsdelivr.net`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: https://i.ytimg.com https://www.google.com https://*.gstatic.com ${supabaseHost}`.trim(),
   `media-src 'self'`,
   `font-src 'self'`,
-  `connect-src 'self' ${supabaseHost} https://*.supabase.co wss://*.supabase.co`.trim(),
+  `worker-src 'self' blob: https://cdn.jsdelivr.net`,
+  `connect-src 'self' ${supabaseHost} https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://tessdata.projectnaptha.com http://localhost:11434`.trim(),
   `frame-src https://www.youtube-nocookie.com`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
@@ -33,6 +34,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // ── Prevent server-side bundling of browser-only packages ──
+  serverExternalPackages: ["tesseract.js"],
+
   // ── Dev: allow 127.0.0.1 to load HMR / dev JS assets ──
   allowedDevOrigins: ["127.0.0.1"],
   // ── Performance: React compiler removes unnecessary re-renders ──

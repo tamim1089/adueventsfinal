@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Mail, Phone, Building2, Building, GraduationCap, Check, Send, X, Copy, Camera, type LucideIcon } from "lucide-react";
-import BusinessCardScanner, { type ScannedCard } from "./BusinessCardScanner";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { Mail, Phone, Building2, Building, GraduationCap, Check, Send, X, Copy, Camera, Pencil, Save, Globe, type LucideIcon } from "lucide-react";
+import BusinessCardScanner from "./BusinessCardScanner";
+import { type ScannedCard } from "./scanner-types";
 import { type Partner, type PartnerCategory, SHOW_FULL_SCHOOLS } from "@/lib/partnerships-data";
 import { useIsOrganizer } from "@/lib/useViewer";
 
@@ -90,6 +91,35 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
   const [copied, setCopied] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannedCards, setScannedCards] = useState<ScannedCard[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Partial<ScannedCard>>({});
+  // Gate scanner to client-only
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+
+  const startEdit = useCallback((card: ScannedCard) => {
+    setEditingId(card.id);
+    setEditDraft({ ...card });
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!editingId) return;
+    const updated = { ...scannedCards.find((c) => c.id === editingId)!, ...editDraft };
+    setScannedCards((prev) => prev.map((c) => c.id === editingId ? updated : c));
+    setEditingId(null);
+    fetch("/api/scan-card", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    }).catch(() => {});
+  }, [editingId, editDraft, scannedCards]);
+
+  const cancelEdit = useCallback(() => { setEditingId(null); setEditDraft({}); }, []);
+  const removeCard = useCallback((id: string) => {
+    setScannedCards((prev) => prev.filter((c) => c.id !== id));
+    if (editingId === id) { setEditingId(null); setEditDraft({}); }
+  }, [editingId]);
+
 
   const visible = SHOW_FULL_SCHOOLS ? partners : partners.filter((p) => !(p.category === "school" && !p.mou));
   const emailable = useMemo(() => visible.filter((p) => firstEmail(p)), [visible]);
@@ -190,7 +220,7 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
             </button>
           </div>
 
-          {/* Scanned Cards Grid (only shows if there are scanned cards) */}
+          {/* Scanned Cards Grid */}
           {scannedCards.length > 0 && (
             <div className="mt-12">
               <div className="mb-6 flex items-center justify-between border-b border-[var(--glass-border)] pb-4">
@@ -200,48 +230,162 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
                 </span>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {scannedCards.map((card) => (
-                  <div key={card.id} className="card-hover relative flex flex-col gap-3 rounded-[var(--r-xl)] border border-[var(--glass-border)] bg-[var(--bg-base)] p-6 shadow-sm transition-shadow hover:shadow-md">
-                    <div className="flex items-center gap-4">
-                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--bg-subtle)] font-display text-xl font-bold text-[var(--accent)]">
-                        {card.name ? card.name.charAt(0).toUpperCase() : "?"}
+                {scannedCards.map((card) => {
+                  const isEditing = editingId === card.id;
+                  const d = isEditing ? editDraft : card;
+
+                  return (
+                    <div key={card.id} className={`relative flex flex-col gap-3 rounded-[var(--r-xl)] border bg-[var(--bg-base)] p-5 shadow-sm transition-shadow ${
+                      isEditing ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-[var(--glass-border)] hover:shadow-md"
+                    }`}>
+
+                      {/* Top row: avatar + name/title + action buttons */}
+                      <div className="flex items-start gap-3">
+                        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--bg-subtle)] font-display text-lg font-bold text-[var(--accent)]">
+                          {(d.name ?? card.name)?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {isEditing ? (
+                            <input
+                              className="w-full rounded border border-[var(--glass-border)] bg-[var(--bg-subtle)] px-2 py-1 text-sm font-bold text-[var(--text-primary)] focus:border-[var(--accent)] focus:outline-none"
+                              value={d.name ?? ""}
+                              onChange={(e) => setEditDraft((p) => ({ ...p, name: e.target.value }))}
+                              placeholder="Full name"
+                            />
+                          ) : (
+                            <h4 className="font-bold leading-tight text-[var(--text-primary)] truncate">{card.name || "Unknown Name"}</h4>
+                          )}
+                          {isEditing ? (
+                            <input
+                              className="mt-1 w-full rounded border border-[var(--glass-border)] bg-[var(--bg-subtle)] px-2 py-0.5 text-xs text-[var(--text-tertiary)] focus:border-[var(--accent)] focus:outline-none"
+                              value={d.title ?? ""}
+                              onChange={(e) => setEditDraft((p) => ({ ...p, title: e.target.value || null }))}
+                              placeholder="Job title"
+                            />
+                          ) : (
+                            card.title && <p className="text-xs text-[var(--text-tertiary)] truncate">{card.title}</p>
+                          )}
+                        </div>
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isEditing ? (
+                            <>
+                              <button onClick={saveEdit} title="Save"
+                                className="rounded-md p-1.5 text-green-500 hover:bg-green-500/10 transition-colors">
+                                <Save size={15} />
+                              </button>
+                              <button onClick={cancelEdit} title="Cancel"
+                                className="rounded-md p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--bg-subtle)] transition-colors">
+                                <X size={15} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => startEdit(card)} title="Edit card"
+                                className="rounded-md p-1.5 text-[var(--text-tertiary)] hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] transition-colors">
+                                <Pencil size={14} />
+                              </button>
+                              <button onClick={() => removeCard(card.id)} title="Remove"
+                                className="rounded-md p-1.5 text-[var(--text-tertiary)] hover:text-red-500 hover:bg-red-500/10 transition-colors">
+                                <X size={14} />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold leading-tight text-[var(--text-primary)]">{card.name || "Unknown Name"}</h4>
-                        {card.title && <p className="text-xs font-medium text-[var(--text-tertiary)]">{card.title}</p>}
+
+                      {/* Company */}
+                      {(isEditing || card.company) && (
+                        <div>
+                          {isEditing ? (
+                            <input
+                              className="w-full rounded border border-[var(--glass-border)] bg-[var(--bg-subtle)] px-2 py-1 text-xs font-semibold text-[var(--text-secondary)] focus:border-[var(--accent)] focus:outline-none"
+                              value={d.company ?? ""}
+                              onChange={(e) => setEditDraft((p) => ({ ...p, company: e.target.value || null }))}
+                              placeholder="Company / Organisation"
+                            />
+                          ) : (
+                            <div className="inline-flex items-center gap-1.5 rounded bg-[var(--bg-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                              <Building size={11} className="opacity-60" />{card.company}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Contact fields */}
+                      <div className="space-y-2 border-t border-[var(--glass-border)] pt-3">
+                        {/* Email */}
+                        {isEditing ? (
+                          <label className="flex items-center gap-2">
+                            <Mail size={13} className="text-[var(--accent)] shrink-0" />
+                            <input
+                              className="flex-1 rounded border border-[var(--glass-border)] bg-[var(--bg-subtle)] px-2 py-1 text-xs text-[var(--text-secondary)] focus:border-[var(--accent)] focus:outline-none"
+                              value={d.email ?? ""}
+                              onChange={(e) => setEditDraft((p) => ({ ...p, email: e.target.value || null }))}
+                              placeholder="Email address"
+                              type="email"
+                            />
+                          </label>
+                        ) : card.email ? (
+                          <a href={`mailto:${card.email}`} className="flex items-center gap-2 text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors">
+                            <Mail size={13} className="text-[var(--accent)] shrink-0" />
+                            <span className="truncate">{card.email}</span>
+                          </a>
+                        ) : null}
+
+                        {/* Phone */}
+                        {isEditing ? (
+                          <label className="flex items-center gap-2">
+                            <Phone size={13} className="text-[var(--accent)] shrink-0" />
+                            <input
+                              className="flex-1 rounded border border-[var(--glass-border)] bg-[var(--bg-subtle)] px-2 py-1 text-xs text-[var(--text-secondary)] focus:border-[var(--accent)] focus:outline-none"
+                              value={d.phone ?? ""}
+                              onChange={(e) => setEditDraft((p) => ({ ...p, phone: e.target.value || null }))}
+                              placeholder="Phone number"
+                              type="tel"
+                            />
+                          </label>
+                        ) : card.phone ? (
+                          <a href={`tel:${card.phone.replace(/\s/g, "")}`} className="flex items-center gap-2 text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors">
+                            <Phone size={13} className="text-[var(--accent)] shrink-0" />
+                            <span>{card.phone}</span>
+                          </a>
+                        ) : null}
+
+                        {/* Website */}
+                        {isEditing ? (
+                          <label className="flex items-center gap-2">
+                            <Globe size={13} className="text-[var(--accent)] shrink-0" />
+                            <input
+                              className="flex-1 rounded border border-[var(--glass-border)] bg-[var(--bg-subtle)] px-2 py-1 text-xs text-[var(--text-secondary)] focus:border-[var(--accent)] focus:outline-none"
+                              value={d.website ?? ""}
+                              onChange={(e) => setEditDraft((p) => ({ ...p, website: e.target.value || null }))}
+                              placeholder="Website"
+                            />
+                          </label>
+                        ) : card.website ? (
+                          <a href={card.website} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors">
+                            <Globe size={13} className="text-[var(--accent)] shrink-0" />
+                            <span className="truncate">{card.website.replace(/^https?:\/\//, "")}</span>
+                          </a>
+                        ) : null}
                       </div>
                     </div>
-                    {card.company && (
-                      <div className="mt-2 inline-flex w-fit items-center rounded bg-[var(--bg-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)]">
-                        <Building size={12} className="mr-1.5 opacity-70" /> {card.company}
-                      </div>
-                    )}
-                    <div className="mt-auto pt-4 space-y-2 border-t border-[var(--glass-border)]">
-                      {card.email && (
-                        <a href={`mailto:${card.email}`} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]">
-                          <Mail size={14} className="text-[var(--accent)] opacity-80" /> <span className="truncate">{card.email}</span>
-                        </a>
-                      )}
-                      {card.phone && (
-                        <a href={`tel:${card.phone.replace(/\s/g, "")}`} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]">
-                          <Phone size={14} className="text-[var(--accent)] opacity-80" /> {card.phone}
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
       </section>
 
-      {scannerOpen && (
+      {isMounted && scannerOpen && (
         <BusinessCardScanner
           onClose={() => setScannerOpen(false)}
           onScan={(card) => setScannedCards((prev) => [card, ...prev])}
         />
       )}
+
 
       {GROUPS.map((g) => {
         const items = visible

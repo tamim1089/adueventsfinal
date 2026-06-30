@@ -1,44 +1,56 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
-// We use the service role key here to bypass RLS for inserting,
-// or we can just use anon key and rely on an INSERT-only RLS policy on the table.
+/**
+ * POST /api/scan-card
+ *
+ * Receives structured JSON from the client-side OCR pipeline and upserts
+ * into scanned_business_cards. No images are ever sent here.
+ *
+ * Idempotency: if a card with the same (email, phone) pair already exists
+ * it is updated in-place via ON CONFLICT upsert.
+ */
 export async function POST(req: Request) {
   try {
     const data = await req.json();
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    if (!url || !key) {
-      console.warn("Supabase not configured, skipping DB insert.");
-      return NextResponse.json({ success: true, warning: "Supabase not configured." });
+    // Basic validation — at minimum we need some text to have been read
+    if (!data || typeof data !== "object") {
+      return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
     }
 
-    const supabase = createClient(url, key);
-    
-    // Insert into the scanned_business_cards table. 
-    // Requires an INSERT-only RLS policy in Supabase.
-    const { error } = await supabase
+    const row = {
+      id:         data.id ?? undefined,          // allow client-supplied uuid
+      name:       data.name        ?? null,
+      title:      data.title       ?? null,
+      company:    data.company     ?? null,
+      email:      data.email       ?? null,
+      phone:      data.phone       ?? null,
+      website:    data.website     ?? null,
+      address:    data.address     ?? null,
+      phones:     Array.isArray(data.phones)  ? data.phones  : [],
+      emails:     Array.isArray(data.emails)  ? data.emails  : [],
+      socials:    Array.isArray(data.socials) ? data.socials : [],
+      raw_text:   data.rawText     ?? null,
+      confidence: typeof data.confidence === "number" ? data.confidence : null,
+    };
+
+    const { error } = await supabaseAdmin
       .from("scanned_business_cards")
-      .insert({
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        company: data.company,
-        title: data.title,
-        raw_text: data.rawText
+      .upsert(row, {
+        // Dedup on email+phone unique index when both are present
+        onConflict: row.email && row.phone ? "email,phone" : "id",
+        ignoreDuplicates: false,
       });
 
     if (error) {
-      console.error("Failed to insert scanned card:", error);
-      // We still return 200 so the UI doesn't break, just logged the error for admin.
+      console.error("[scan-card] DB error:", error.message);
+      // Still return 200 so the UI never breaks — the scan was valid
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error("[scan-card] Unexpected error:", err);
     return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
