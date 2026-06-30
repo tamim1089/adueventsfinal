@@ -23,42 +23,48 @@ export default function BusinessCardScanner({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [permDenied, setPermDenied] = useState(false);
+  const [requestingCam, setRequestingCam] = useState(false);
 
-  useEffect(() => {
-    let stream: MediaStream | null = null;
-    
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  const startCamera = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
       setErrorMsg("Camera access requires HTTPS or localhost.");
       return;
     }
-
-    const startCamera = async () => {
+    setErrorMsg("");
+    setPermDenied(false);
+    setRequestingCam(true);
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      streamRef.current = s;
+      if (videoRef.current) videoRef.current.srcObject = s;
+    } catch {
       try {
-        const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        stream = s;
-        if (videoRef.current) videoRef.current.srcObject = s;
-      } catch (err: any) {
-        try {
-          const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
-          stream = fallbackStream;
-          if (videoRef.current) videoRef.current.srcObject = fallbackStream;
-        } catch (fallbackErr) {
-          // Use console.warn instead of console.error so Next.js doesn't show a full-screen error overlay in dev mode
-          console.warn("Camera fallback also failed:", fallbackErr);
-          setErrorMsg("Camera blocked. Please upload a photo instead.");
-        }
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        streamRef.current = fallbackStream;
+        if (videoRef.current) videoRef.current.srcObject = fallbackStream;
+      } catch (fallbackErr: any) {
+        console.warn("Camera fallback also failed:", fallbackErr);
+        const isDenied = fallbackErr?.name === "NotAllowedError" || fallbackErr?.name === "PermissionDeniedError";
+        setPermDenied(isDenied);
+        setErrorMsg(isDenied ? "denied" : "Camera blocked. Please upload a photo instead.");
       }
-    };
-    
-    startCamera();
+    } finally {
+      setRequestingCam(false);
+    }
+  };
 
+  useEffect(() => {
+    startCamera();
     return () => {
-      if (stream) stream.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((t) => t.stop());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -210,12 +216,38 @@ export default function BusinessCardScanner({
           )}
           
           {errorMsg && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 p-6 text-center">
-              <p className="mb-4 font-medium text-white">{errorMsg}</p>
-              <label className="cursor-pointer rounded-full bg-white px-6 py-2.5 font-bold text-black transition hover:scale-105 active:scale-95">
-                Choose Image File
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
-              </label>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 p-6 text-center gap-3">
+              {permDenied ? (
+                <>
+                  <Camera size={36} className="mb-1 text-white/60" />
+                  <p className="font-semibold text-white text-base">Camera permission denied</p>
+                  <p className="text-sm text-white/70 max-w-xs">
+                    Click <strong>Request Camera Access</strong> below to trigger the browser prompt, or allow it
+                    manually in your browser&apos;s site settings.
+                  </p>
+                  <button
+                    onClick={startCamera}
+                    disabled={requestingCam}
+                    className="mt-1 flex items-center gap-2 rounded-full bg-white px-6 py-2.5 font-bold text-black transition hover:scale-105 active:scale-95 disabled:opacity-60"
+                  >
+                    {requestingCam ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                    {requestingCam ? "Requesting…" : "Request Camera Access"}
+                  </button>
+                  <p className="text-xs text-white/50">— or —</p>
+                  <label className="cursor-pointer rounded-full border border-white/30 bg-white/10 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">
+                    Upload Image Instead
+                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <p className="mb-2 font-medium text-white">{errorMsg}</p>
+                  <label className="cursor-pointer rounded-full bg-white px-6 py-2.5 font-bold text-black transition hover:scale-105 active:scale-95">
+                    Choose Image File
+                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
+                  </label>
+                </>
+              )}
             </div>
           )}
         </div>
