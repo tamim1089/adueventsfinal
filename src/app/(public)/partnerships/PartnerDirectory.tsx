@@ -97,6 +97,32 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
 
+  // Load previously scanned cards from backend on mount
+  useEffect(() => {
+    fetch("/api/scan-card")
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setScannedCards(data.map((row: Record<string, unknown>) => ({
+            id: row.id as string,
+            name: (row.name as string) ?? "Unknown",
+            email: (row.email as string) ?? null,
+            phone: (row.phone as string) ?? null,
+            company: (row.company as string) ?? null,
+            title: (row.title as string) ?? null,
+            website: (row.website as string) ?? null,
+            address: (row.address as string) ?? null,
+            phones: Array.isArray(row.phones) ? row.phones as string[] : [],
+            emails: Array.isArray(row.emails) ? row.emails as string[] : [],
+            socials: Array.isArray(row.socials) ? row.socials as string[] : [],
+            rawText: (row.raw_text as string) ?? "",
+            confidence: typeof row.confidence === "number" ? row.confidence : 50,
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const startEdit = useCallback((card: ScannedCard) => {
     setEditingId(card.id);
     setEditDraft({ ...card });

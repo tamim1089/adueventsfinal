@@ -2,6 +2,25 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 /**
+ * GET /api/scan-card
+ *
+ * Returns all scanned business cards, newest first.
+ */
+export async function GET() {
+  const { data, error } = await supabaseAdmin
+    .from("scanned_business_cards")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[scan-card] GET error:", error.message);
+    return NextResponse.json({ error: "Failed to fetch cards" }, { status: 500 });
+  }
+
+  return NextResponse.json(data ?? []);
+}
+
+/**
  * POST /api/scan-card
  *
  * Receives structured JSON from the client-side OCR pipeline and upserts
