@@ -59,3 +59,61 @@ class CameraServiceClass {
 
 // Rule 8: single module-level instance
 export const CameraService = new CameraServiceClass();
+
+export async function captureStill(
+  video: HTMLVideoElement,
+  maxDim = 1280,
+): Promise<ImageData | null> {
+  if (video.readyState < 2 || video.videoWidth === 0) return null;
+
+  const track = video.srcObject instanceof MediaStream
+    ? video.srcObject.getVideoTracks()[0]
+    : null;
+
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  if (track && 'ImageCapture' in window && typeof (window as any).ImageCapture !== 'undefined') {
+    try {
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+      const capture = new (window as any).ImageCapture(track);
+      const photoCapabilities = await capture.getPhotoCapabilities();
+
+      let photoWidth = Math.min(photoCapabilities.imageWidthRange?.max ?? maxDim, maxDim);
+      let photoHeight = Math.round(photoWidth * (video.videoHeight / video.videoWidth));
+
+      if (photoCapabilities.imageWidthRange) {
+        photoWidth = Math.min(
+          Math.max(photoWidth, photoCapabilities.imageWidthRange.min),
+          photoCapabilities.imageWidthRange.max,
+        );
+      }
+      if (photoCapabilities.imageHeightRange) {
+        photoHeight = Math.min(
+          Math.max(photoHeight, photoCapabilities.imageHeightRange.min),
+          photoCapabilities.imageHeightRange.max,
+        );
+      }
+
+      const blob = await capture.takePhoto({ imageWidth: photoWidth, imageHeight: photoHeight });
+      const bitmap = await createImageBitmap(blob);
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close();
+      return ctx.getImageData(0, 0, canvas.width, canvas.height);
+    } catch {
+      // fall through to canvas capture
+    }
+  }
+
+  const canvas = document.createElement("canvas");
+  const scale = Math.min(1, maxDim / Math.max(video.videoWidth, video.videoHeight));
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
