@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { Mail, Phone, Building2, Building, GraduationCap, Check, Send, X, Copy, Camera, Pencil, Save, Globe, type LucideIcon } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import BusinessCardScanner from "./BusinessCardScanner";
 import { type ScannedCard } from "./scanner-types";
 import { type Partner, type PartnerCategory, SHOW_FULL_SCHOOLS } from "@/lib/partnerships-data";
@@ -97,30 +98,69 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
 
-  // Load previously scanned cards from backend on mount
+  // Load initial cards + subscribe to Supabase Realtime
   useEffect(() => {
-    fetch("/api/scan-card")
-      .then((r) => r.ok ? r.json() : [])
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setScannedCards(data.map((row: Record<string, unknown>) => ({
-            id: row.id as string,
-            name: (row.name as string) ?? "Unknown",
-            email: (row.email as string) ?? null,
-            phone: (row.phone as string) ?? null,
-            company: (row.company as string) ?? null,
-            title: (row.title as string) ?? null,
-            website: (row.website as string) ?? null,
-            address: (row.address as string) ?? null,
-            phones: Array.isArray(row.phones) ? row.phones as string[] : [],
-            emails: Array.isArray(row.emails) ? row.emails as string[] : [],
-            socials: Array.isArray(row.socials) ? row.socials as string[] : [],
-            rawText: (row.raw_text as string) ?? "",
-            confidence: typeof row.confidence === "number" ? row.confidence : 50,
-          })));
-        }
-      })
-      .catch(() => {});
+    const sb = createClient();
+
+    const mapRow = (row: Record<string, unknown>): ScannedCard => ({
+      id: row.id as string,
+      name: (row.name as string) ?? "Unknown",
+      email: (row.email as string) ?? null,
+      phone: (row.phone as string) ?? null,
+      company: (row.company as string) ?? null,
+      title: (row.title as string) ?? null,
+      website: (row.website as string) ?? null,
+      address: (row.address as string) ?? null,
+      phones: Array.isArray(row.phones) ? row.phones as string[] : [],
+      emails: Array.isArray(row.emails) ? row.emails as string[] : [],
+      socials: Array.isArray(row.socials) ? row.socials as string[] : [],
+      rawText: (row.raw_text as string) ?? "",
+      confidence: typeof row.confidence === "number" ? row.confidence : 50,
+    });
+
+    // Fetch existing cards
+    sb.from("scanned_business_cards")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setScannedCards(data.map(mapRow));
+      });
+
+    // Subscribe to realtime changes
+    const channel = sb
+      .channel("scanned-cards")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "scanned_business_cards" },
+        (payload: { new: Record<string, unknown> }) => {
+          if (payload.new) setScannedCards((prev) => [mapRow(payload.new), ...prev]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "scanned_business_cards" },
+        (payload: { new: Record<string, unknown> }) => {
+          if (payload.new) {
+            const updated = mapRow(payload.new);
+            setScannedCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "scanned_business_cards" },
+        (payload: { old: Record<string, unknown> }) => {
+          if (payload.old) {
+            const deletedId = payload.old.id as string;
+            setScannedCards((prev) => prev.filter((c) => c.id !== deletedId));
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      sb.removeChannel(channel);
+    };
   }, []);
 
   const startEdit = useCallback((card: ScannedCard) => {
@@ -144,6 +184,11 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
   const removeCard = useCallback((id: string) => {
     setScannedCards((prev) => prev.filter((c) => c.id !== id));
     if (editingId === id) { setEditingId(null); setEditDraft({}); }
+    fetch("/api/scan-card", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(() => {});
   }, [editingId]);
 
 

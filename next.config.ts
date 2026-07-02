@@ -14,7 +14,7 @@ const csp = [
   `media-src 'self'`,
   `font-src 'self'`,
   `worker-src 'self' blob: https://cdn.jsdelivr.net`,
-   `connect-src 'self' ${supabaseHost} https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://tessdata.projectnaptha.com https://huggingface.co https://cdn-lfs.huggingface.co https://router.huggingface.co http://localhost:11434`.trim(),
+   `connect-src 'self' ${supabaseHost} https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://tessdata.projectnaptha.com https://huggingface.co https://cdn-lfs.huggingface.co https://router.huggingface.co http://localhost:11434 https://openrouter.ai`.trim(),
   `frame-src https://www.youtube-nocookie.com`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
