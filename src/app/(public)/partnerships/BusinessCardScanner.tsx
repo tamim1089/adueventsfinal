@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
   X, Camera, Loader2, CheckCircle2, ShieldAlert, VideoOff,
-  MonitorOff, UploadCloud, ScanLine, RotateCcw, AlertCircle,
+  UploadCloud, ScanLine, RotateCcw,
 } from "lucide-react";
 import { CameraService } from "@/lib/camera-service";
 import { type ScannedCard } from "./scanner-types";
-import { parseCardText } from "./parse-card";
-export type { ScannedCard };
 
 type Phase =
   | "preflight" | "idle" | "requesting" | "live" | "denied"
@@ -41,6 +39,29 @@ function classifyError(err: unknown): Phase {
   }
 }
 
+async function scanWithVisionApi(canvas: HTMLCanvasElement): Promise<ScannedCard | null> {
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", 0.8)
+  );
+  if (!blob) return null;
+
+  const buffer = await blob.arrayBuffer();
+  const base64 = Buffer.from(buffer).toString("base64");
+
+  const res = await fetch("/api/scan-card-vision", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: base64, mimeType: "image/jpeg" }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error ?? "Vision API error");
+  }
+
+  return res.json();
+}
+
 export default function BusinessCardScanner({
   onClose,
   onScan,
@@ -51,15 +72,11 @@ export default function BusinessCardScanner({
   const videoRef    = useRef<HTMLVideoElement>(null);
   const canvasRef   = useRef<HTMLCanvasElement>(null);
   const stoppedRef  = useRef(false);
-  const ocrWorkerRef    = useRef<Worker | null>(null);
-  const ocrReadyRef     = useRef(false);
-  const ocrResolveRef   = useRef<((result: string | null) => void) | null>(null);
 
   const [phase, setPhase]           = useState<Phase>("preflight");
   const [lastCardName, setLastCardName] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [ocrLoading, setOcrLoading] = useState(false);
 
   // ── Pre-flight ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -80,36 +97,6 @@ export default function BusinessCardScanner({
       if (!cancelled) setPhase("idle");
     })();
     return () => { cancelled = true; };
-  }, []);
-
-  // ── OCR worker warmup ─────────────────────────────────────────────────────
-  useEffect(() => {
-    setOcrLoading(true);
-    const worker = new Worker("/ocr-worker.js");
-    ocrWorkerRef.current = worker;
-
-    worker.onmessage = (e) => {
-      const msg = e.data;
-      if (msg.type === "ready") {
-        ocrReadyRef.current = true;
-        setOcrLoading(false);
-      } else if (msg.type === "result") {
-        ocrResolveRef.current?.(msg.text || null);
-        ocrResolveRef.current = null;
-      } else if (msg.type === "error") {
-        console.warn("OCR worker error:", msg.message);
-        ocrResolveRef.current?.(null);
-        ocrResolveRef.current = null;
-      }
-    };
-
-    worker.postMessage({ type: "init" });
-
-    return () => {
-      worker.terminate();
-      ocrWorkerRef.current = null;
-      ocrReadyRef.current = false;
-    };
   }, []);
 
   // ── Camera start ───────────────────────────────────────────────────────────
@@ -138,36 +125,8 @@ export default function BusinessCardScanner({
     }
   };
 
-  // ── Client-side OCR via Web Worker ────────────────────────────────────────
-  const scanWithWorker = useCallback(async (imageData: ImageData): Promise<Partial<ScannedCard> | null> => {
-    const worker = ocrWorkerRef.current;
-    if (!worker || !ocrReadyRef.current) return null;
-
-    return new Promise((resolve) => {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const timeout = setTimeout(() => {
-        if (ocrResolveRef.current === resolve) ocrResolveRef.current = null;
-        resolve(null);
-      }, 30000);
-
-      ocrResolveRef.current = (text) => {
-        clearTimeout(timeout);
-        if (!text || text.length < 2) { resolve(null); return; }
-        const parsed = parseCardText(text);
-        resolve({ ...parsed, confidence: 70 });
-      };
-
-      worker.postMessage({
-        type: "scan",
-        imageData,
-        id,
-        variants: ["original", "contrast", "sharpen"],
-      });
-    });
-  }, []);
-
-  // ── Grab frame and scan ────────────────────────────────────────────────────
-  const doScan = useCallback(async () => {
+  // ── Grab frame and scan via Vision API ──────────────────────────────────────
+  const doScan = useCallback(async (): Promise<ScannedCard | null> => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || video.readyState < 2 || video.videoWidth === 0) return null;
@@ -177,54 +136,33 @@ export default function BusinessCardScanner({
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
     setErrorMsg(null);
     setScanning(true);
 
-    if (!ocrReadyRef.current) {
-      setScanning(false);
-      setErrorMsg("OCR engine not ready yet. Try again in a moment.");
+    try {
+      const card = await scanWithVisionApi(canvas);
+      return card;
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Vision API error");
       return null;
+    } finally {
+      setScanning(false);
     }
-
-    const result = await scanWithWorker(imageData);
-
-    setScanning(false);
-    return result;
-  }, [scanWithWorker]);
+  }, []);
 
   // ── Manual scan button handler ─────────────────────────────────────────────
   const handleScan = useCallback(async () => {
     if (scanning) return;
     const card = await doScan();
     if (card && !stoppedRef.current) {
-      const scanned: ScannedCard = {
-        id: card.id ?? crypto.randomUUID(),
-        name: card.name ?? "Unknown",
-        email: card.email ?? null,
-        phone: card.phone ?? null,
-        company: card.company ?? null,
-        title: card.title ?? null,
-        website: card.website ?? null,
-        address: card.address ?? null,
-        phones: card.phones ?? [],
-        emails: card.emails ?? [],
-        socials: card.socials ?? [],
-        rawText: card.rawText ?? "",
-        confidence: card.confidence ?? 50,
-      };
-      onScan(scanned);
-      setLastCardName(scanned.name);
+      onScan(card);
+      setLastCardName(card.name);
       setPhase("success");
-      fetch("/api/scan-card", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scanned),
-      }).catch(() => {});
-    } else {
+    } else if (!errorMsg) {
       setErrorMsg("Could not read card. Try better lighting or upload a photo.");
     }
-  }, [doScan, onScan, scanning]);
+  }, [doScan, onScan, scanning, errorMsg]);
 
   // ── Upload fallback ──────────────────────────────────────────────────────
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,40 +179,23 @@ export default function BusinessCardScanner({
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
       setScanning(true);
       setErrorMsg(null);
 
-      if (!ocrReadyRef.current) {
+      try {
+        const card = await scanWithVisionApi(canvas);
+        if (card && !stoppedRef.current) {
+          onScan(card);
+          setLastCardName(card.name);
+          setPhase("success");
+        } else {
+          setErrorMsg("Could not read card from this image.");
+        }
+      } catch (err) {
+        setErrorMsg(err instanceof Error ? err.message : "Vision API error");
+      } finally {
         setScanning(false);
-        setErrorMsg("OCR engine still loading. Try again in a moment.");
-        return;
-      }
-
-      const card = await scanWithWorker(imageData);
-
-      setScanning(false);
-
-      if (card && (card.name || card.email || card.phone)) {
-        const scanned: ScannedCard = {
-          id: card.id ?? crypto.randomUUID(), name: card.name ?? "Unknown",
-          email: card.email ?? null, phone: card.phone ?? null,
-          company: card.company ?? null, title: card.title ?? null,
-          website: card.website ?? null, address: card.address ?? null,
-          phones: card.phones ?? [], emails: card.emails ?? [],
-          socials: card.socials ?? [], rawText: card.rawText ?? "",
-          confidence: card.confidence ?? 50,
-        };
-        onScan(scanned);
-        setLastCardName(scanned.name);
-        setPhase("success");
-        fetch("/api/scan-card", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(scanned),
-        }).catch(() => {});
-      } else {
-        setErrorMsg("Could not read text from this image.");
       }
     };
     img.src = URL.createObjectURL(file);
@@ -339,17 +260,8 @@ export default function BusinessCardScanner({
               </div>
             )}
 
-            {ocrLoading && !scanning && (
-              <div className="absolute left-3 right-3 flex justify-center" style={{ top: "4rem" }}>
-                <span className="rounded-full bg-amber-600/80 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                  <Loader2 size={11} className="mr-1 inline animate-spin" />
-                  Loading OCR engine…
-                </span>
-              </div>
-            )}
-
             {errorMsg && (
-              <div className="absolute left-3 right-3 flex justify-center" style={{ top: "6rem" }}>
+              <div className="absolute left-3 right-3 flex justify-center" style={{ top: "4rem" }}>
                 <span className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
                   {errorMsg}
                 </span>
