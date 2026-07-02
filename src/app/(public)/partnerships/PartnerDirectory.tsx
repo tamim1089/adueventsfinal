@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { Mail, Phone, Building2, Building, GraduationCap, Check, Send, X, Copy, Camera, Pencil, Save, Globe, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import BusinessCardScanner from "./BusinessCardScanner";
+import PartnershipsTracker from "./tracker/PartnershipsTracker";
 import { type ScannedCard } from "./scanner-types";
 import { type Partner, type PartnerCategory, SHOW_FULL_SCHOOLS } from "@/lib/partnerships-data";
 import { useIsOrganizer } from "@/lib/useViewer";
@@ -496,6 +497,13 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
           </section>
         );
       })}
+
+      {/* Partnerships Tracker Section */}
+      <section className="border-t border-[var(--glass-border)] bg-[var(--bg-base)]">
+        <div className={`py-16 sm:py-20 ${EDGE}`}>
+          <PartnershipsTracker />
+        </div>
+      </section>
     </>
   );
 }
