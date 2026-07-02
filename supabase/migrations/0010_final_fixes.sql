@@ -10,7 +10,7 @@ alter table scanned_business_cards
   add column if not exists phones    text[] not null default '{}',
   add column if not exists emails    text[] not null default '{}',
   add column if not exists socials   text[] not null default '{}',
-  add column if not exists confidence numeric(4,3),
+  add column if not exists confidence numeric(6,3),
   add column if not exists scanned_at timestamptz not null default now();
 
 -- 2. Dedup index
