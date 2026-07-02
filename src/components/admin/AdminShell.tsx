@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   Activity, CalendarDays, CalendarRange, Users, BadgeCheck, ClipboardList,
-  Images, FileBarChart, Bell, Search, LogOut, Plus, Menu, X, type LucideIcon,
+  Images, FileBarChart, Bell, Search, LogOut, Plus, Menu, X, MessageSquareWarning, type LucideIcon,
 } from "lucide-react";
 import { signOut } from "@/app/(admin)/admin/actions";
 
@@ -18,6 +18,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/admin/surveys",      label: "Surveys",      icon: ClipboardList },
   { href: "/admin/photos",       label: "Photos",       icon: Images },
   { href: "/admin/reports",      label: "Reports",      icon: FileBarChart },
+  { href: "/admin/concerns",     label: "Concerns",     icon: MessageSquareWarning },
 ];
 
 function NavLinks({ pathname, onNav }: { pathname: string; onNav?: () => void }) {
