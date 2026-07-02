@@ -60,13 +60,13 @@ export async function processWebhook(
 
   log("webhook_received");
 
-  if (payload.event !== "message.received" || payload.data.type !== "image") {
-    log("ignored", { reason: "not an image message" });
+  if (payload.event !== "message.received" || (payload.data.type !== "image" && payload.data.type !== "document")) {
+    log("ignored", { reason: "not an image or document message" });
     return;
   }
 
-  if (!payload.data.isGroup || payload.data.chatId !== "120363426921071336@g.us") {
-    log("ignored", { reason: "not from Business Card Scanner group", chatId: payload.data.chatId });
+  if (!payload.data.isGroup) {
+    log("ignored", { reason: "not a group message", chatId: payload.data.chatId });
     return;
   }
 
