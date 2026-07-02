@@ -1,7 +1,8 @@
 "use server";
 
+import "server-only";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export interface PartnershipTrackerItem {
   id: string;
@@ -16,8 +17,6 @@ export interface PartnershipTrackerItem {
 }
 
 export async function addPartnershipTracker(formData: FormData) {
-  const sb = await createClient();
-  
   const name = formData.get("name") as string;
   const position = formData.get("position") as string;
   const contact = formData.get("contact") as string;
@@ -29,7 +28,7 @@ export async function addPartnershipTracker(formData: FormData) {
     return { error: "Name is required." };
   }
 
-  const { error } = await sb.from("partnerships_tracker").insert({
+  const { error } = await supabaseAdmin.from("partnerships_tracker").insert({
     name: name.trim(),
     position: position?.trim() || null,
     contact: contact?.trim() || null,
@@ -45,8 +44,6 @@ export async function addPartnershipTracker(formData: FormData) {
 }
 
 export async function updatePartnershipTracker(id: string, formData: FormData) {
-  const sb = await createClient();
-  
   const updates: Record<string, string | null> = {
     name: (formData.get("name") as string)?.trim() || null,
     position: (formData.get("position") as string)?.trim() || null,
@@ -69,7 +66,7 @@ export async function updatePartnershipTracker(id: string, formData: FormData) {
     return { error: "Name cannot be empty." };
   }
 
-  const { error } = await sb
+  const { error } = await supabaseAdmin
     .from("partnerships_tracker")
     .update(updates)
     .eq("id", id);
@@ -81,9 +78,7 @@ export async function updatePartnershipTracker(id: string, formData: FormData) {
 }
 
 export async function updatePartnershipTrackerNotes(id: string, notes: string) {
-  const sb = await createClient();
-  
-  const { error } = await sb
+  const { error } = await supabaseAdmin
     .from("partnerships_tracker")
     .update({ notes, updated_at: new Date().toISOString() })
     .eq("id", id);
@@ -95,9 +90,7 @@ export async function updatePartnershipTrackerNotes(id: string, notes: string) {
 }
 
 export async function updatePartnershipTrackerUpdates(id: string, updates: string) {
-  const sb = await createClient();
-  
-  const { error } = await sb
+  const { error } = await supabaseAdmin
     .from("partnerships_tracker")
     .update({ updates, updated_at: new Date().toISOString() })
     .eq("id", id);
@@ -109,9 +102,7 @@ export async function updatePartnershipTrackerUpdates(id: string, updates: strin
 }
 
 export async function deletePartnershipTracker(id: string) {
-  const sb = await createClient();
-  
-  const { error } = await sb
+  const { error } = await supabaseAdmin
     .from("partnerships_tracker")
     .delete()
     .eq("id", id);

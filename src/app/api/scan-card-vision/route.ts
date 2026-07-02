@@ -1,4 +1,5 @@
 import "server-only";
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpenRouterVisionProvider } from "@/lib/vision/providers/openrouter";
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
     const { data: inserted, error } = await supabaseAdmin
       .from("scanned_business_cards")
       .insert({
+        id: randomUUID(),
         name,
         title: card.jobTitle,
         company: card.company,
@@ -40,7 +42,7 @@ export async function POST(req: Request) {
 
     if (error) {
       console.error("[scan-card-vision] insert error:", error.message);
-      return NextResponse.json({ error: "Failed to save card" }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({

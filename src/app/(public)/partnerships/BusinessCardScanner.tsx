@@ -46,7 +46,10 @@ async function scanWithVisionApi(canvas: HTMLCanvasElement): Promise<ScannedCard
   if (!blob) return null;
 
   const buffer = await blob.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString("base64");
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
 
   const res = await fetch("/api/scan-card-vision", {
     method: "POST",
@@ -72,11 +75,16 @@ export default function BusinessCardScanner({
   const videoRef    = useRef<HTMLVideoElement>(null);
   const canvasRef   = useRef<HTMLCanvasElement>(null);
   const stoppedRef  = useRef(false);
+  const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onScanRef   = useRef(onScan);
+  onScanRef.current = onScan;
 
   const [phase, setPhase]           = useState<Phase>("preflight");
   const [lastCardName, setLastCardName] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const errorRef = useRef<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   // ── Pre-flight ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -131,38 +139,62 @@ export default function BusinessCardScanner({
     const canvas = canvasRef.current;
     if (!video || !canvas || video.readyState < 2 || video.videoWidth === 0) return null;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const max = 1200;
+    const s = Math.min(1, max / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.round(video.videoWidth * s);
+    canvas.height = Math.round(video.videoHeight * s);
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     setErrorMsg(null);
+    errorRef.current = null;
     setScanning(true);
 
     try {
       const card = await scanWithVisionApi(canvas);
       return card;
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Vision API error");
+      const msg = err instanceof Error ? err.message : "Vision API error";
+      errorRef.current = msg;
+      setErrorMsg(msg);
       return null;
     } finally {
       setScanning(false);
     }
   }, []);
 
-  // ── Manual scan button handler ─────────────────────────────────────────────
-  const handleScan = useCallback(async () => {
-    if (scanning) return;
-    const card = await doScan();
-    if (card && !stoppedRef.current) {
-      onScan(card);
-      setLastCardName(card.name);
-      setPhase("success");
-    } else if (!errorMsg) {
-      setErrorMsg("Could not read card. Try better lighting or upload a photo.");
+  // ── Auto-scan every 4.5s when live ───────────────────────────────────────
+  useEffect(() => {
+    if (phase !== "live") {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      setCountdown(0);
+      return;
     }
-  }, [doScan, onScan, scanning, errorMsg]);
+
+    setCountdown(4);
+    timerRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          doScan().then(card => {
+            if (card && !stoppedRef.current) {
+              onScanRef.current(card);
+              setLastCardName(card.name);
+              setPhase("success");
+              if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+            }
+          });
+          return 4;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      setCountdown(0);
+    };
+  }, [phase, doScan]);
 
   // ── Upload fallback ──────────────────────────────────────────────────────
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,9 +302,17 @@ export default function BusinessCardScanner({
 
             {!scanning && (
               <div className="absolute bottom-3 left-0 right-0 flex justify-center">
-                <span className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white/70 backdrop-blur-sm">
-                  <ScanLine size={11} />
-                  Press scan below
+                <span className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-sm font-semibold text-white/70 backdrop-blur-sm">
+                  <ScanLine size={14} />
+                  Auto-scan in {countdown}s
+                </span>
+              </div>
+            )}
+            {scanning && (
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center">
+                <span className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-sm font-semibold text-white/70 backdrop-blur-sm">
+                  <Loader2 size={14} className="animate-spin" />
+                  Scanning...
                 </span>
               </div>
             )}
@@ -348,27 +388,15 @@ export default function BusinessCardScanner({
             {renderViewport()}
           </div>
           <div className="flex items-center gap-3 p-5">
-            {phase === "live" && (
-              <button
-                onClick={handleScan}
-                disabled={scanning}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-                style={{ background: scanning ? "var(--accent-dim, #666)" : "var(--accent)" }}
-              >
-                {scanning ? <Loader2 size={15} className="animate-spin" /> : <ScanLine size={15} />}
-                {scanning ? "Scanning…" : "Scan now"}
-              </button>
-            )}
-
             {phase === "success" && (
               <button onClick={handleRescan}
-                className="flex items-center gap-2 rounded-full border border-[var(--glass-border)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                <RotateCcw size={15} /> Scan another
+                className="flex items-center gap-2 rounded-full border border-[var(--glass-border)] px-5 py-3 text-base font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                <RotateCcw size={18} /> Scan another
               </button>
             )}
 
-            <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border border-[var(--glass-border)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-              <UploadCloud size={15} /> Upload image
+            <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border border-[var(--glass-border)] px-5 py-3 text-base font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+              <UploadCloud size={18} /> Upload image
               <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
             </label>
           </div>

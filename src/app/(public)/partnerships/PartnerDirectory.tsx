@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Mail, Phone, Building2, Building, GraduationCap, Check, Send, X, Copy, Camera, Pencil, Save, Globe, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import BusinessCardScanner from "./BusinessCardScanner";
@@ -97,6 +97,8 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
   const [editDraft, setEditDraft] = useState<Partial<ScannedCard>>({});
   // Gate scanner to client-only
   const [isMounted, setIsMounted] = useState(false);
+  // Ref to prevent double-add when Realtime fires before/after onScan
+  const pendingScanIds = useRef<Set<string>>(new Set());
   useEffect(() => { setIsMounted(true); }, []);
 
   // Load initial cards + subscribe to Supabase Realtime
@@ -134,7 +136,14 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "scanned_business_cards" },
         (payload: { new: Record<string, unknown> }) => {
-          if (payload.new) setScannedCards((prev) => [mapRow(payload.new), ...prev]);
+          if (payload.new) {
+            const card = mapRow(payload.new);
+            if (pendingScanIds.current.has(card.id)) {
+              pendingScanIds.current.delete(card.id);
+              return;
+            }
+            setScannedCards((prev) => prev.some(c => c.id === card.id) ? prev : [card, ...prev]);
+          }
         },
       )
       .on(
@@ -271,7 +280,7 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
         <div className={`py-16 sm:py-20 ${EDGE}`}>
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
             <div>
-              <p className="text-sm font-medium text-[var(--accent)]">Action — Digitize</p>
+              <p className="text-sm font-medium text-[var(--text-tertiary)]">Action — Digitize</p>
               <h2 className="mt-3 flex items-center gap-3 font-display text-[clamp(1.75rem,3.5vw,2.75rem)] font-bold leading-[1.04] tracking-[-0.02em] text-[var(--text-primary)]">
                 <Camera size={26} strokeWidth={1.75} className="text-[var(--accent)]" />
                 Scanned Cards
@@ -454,7 +463,11 @@ export default function PartnerDirectory({ partners }: { partners: Partner[] }) 
       {isMounted && scannerOpen && (
         <BusinessCardScanner
           onClose={() => setScannerOpen(false)}
-          onScan={(card) => setScannedCards((prev) => [card, ...prev])}
+          onScan={(card) => {
+            pendingScanIds.current.add(card.id);
+            setTimeout(() => pendingScanIds.current.delete(card.id), 5000);
+            setScannedCards((prev) => [card, ...prev]);
+          }}
         />
       )}
 
