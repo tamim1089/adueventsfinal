@@ -38,9 +38,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  processWebhook(payload).catch((err) => {
-    console.error("[openwa-webhook] Async processing error:", err);
-  });
+  try {
+    await processWebhook(payload);
+  } catch (err) {
+    console.error("[openwa-webhook] Processing error:", err);
+    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
+  }
 
   return NextResponse.json({ received: true });
 }
